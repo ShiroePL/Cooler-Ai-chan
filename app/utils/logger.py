@@ -37,19 +37,14 @@ def setup_logger():
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 
-    # Loki handler
-    loki_handler = LokiHandler(Config.LOKI_URL)
-    loki_handler.setLevel(logging.DEBUG)
-    loki_handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-
     # Stream handler (console) with color
-    console_handler = colorlog.StreamHandler()
+    console_handler = colorlog.StreamHandler()  
     console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(colorlog.ColoredFormatter(
-        '%(log_color)s%(asctime)s:%(levelname)s:%(name)s: %(message)s',
+        '%(log_color)s%(levelname)s: %(message)s',  # Removed '%(asctime)s:' and '%(name)s:'
         log_colors={
-            'DEBUG': 'white',
-            'INFO': 'green',
+            'DEBUG': 'green',
+            'INFO': 'light_blue', 
             'WARNING': 'yellow',
             'ERROR': 'red',
             'CRITICAL': 'bold_red',
@@ -57,7 +52,6 @@ def setup_logger():
     ))
 
     logger.addHandler(file_handler)
-    logger.addHandler(loki_handler)
     logger.addHandler(console_handler)
 
     return logger
