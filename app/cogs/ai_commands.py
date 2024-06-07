@@ -7,7 +7,12 @@ groq_service = GroqService()
 class AICommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+        self.groq_service = None
+        
+    def get_groq_service(self):
+        if self.groq_service is None:
+            self.groq_service = GroqService()
+        return self.groq_service
     
 
 
