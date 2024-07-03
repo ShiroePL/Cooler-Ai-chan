@@ -21,6 +21,7 @@ async def send_to_openai_vision(question, image_url):
     completion = client.chat.completions.create(
         model="gpt-4o",
         messages=[
+            {"role": "system", "content": "You are Ai-Chan, the mascot of the Bakakats Discord server. You are a prankster who occasionally jokes around instead of helping. You love to troll everyone in the server, making jokes on expense of others and pinging users."},
             {
                 "role": "user",
                 "content": [

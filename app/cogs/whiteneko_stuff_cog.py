@@ -12,6 +12,8 @@ class WhitenekoModule(commands.Cog):
         self.database = DatabaseService()
         self.words = WORDS
 
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True, ban_members=True)
     @commands.command(name='nickreset')
     async def reset(self, ctx):
         """Resets all users' nicknames to their default values."""
@@ -73,6 +75,8 @@ class WhitenekoModule(commands.Cog):
         await ctx.send(f"Bayo {user.mention}! You have committed war crimes and you are banished to death!")
         await user.kick()
 
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True, ban_members=True)
     @commands.command(name='advertise')
     async def advertise(self, ctx, *, text: str):
         """Sends a specified message to all users via direct message.
@@ -86,6 +90,8 @@ class WhitenekoModule(commands.Cog):
             except Exception as ex:
                 print(f"Error sending message to user {user.name}: {ex}")
 
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True, ban_members=True)
     @commands.command(name='lmao')
     async def lmao(self, ctx):
         """Changes all users' nicknames to random combinations of words."""
@@ -96,6 +102,8 @@ class WhitenekoModule(commands.Cog):
             except Exception as ex:
                 print(ex)
 
+    @commands.guild_only()
+    @commands.has_permissions(kick_members=True, ban_members=True)
     @commands.command(name='lmaoo')
     async def lmaoo(self, ctx):
         """Changes all text channel names to random combinations of words."""

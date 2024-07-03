@@ -34,3 +34,5 @@ class Config:
     REFERENCE_HOUR = 0  # Reference hour to start the intervals
 
     EMOJI_API_KEY = os.getenv('EMOJI_API_KEY')
+    OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
+    TOMORROW_API_KEY= os.getenv('TOMORROW_API_KEY')
