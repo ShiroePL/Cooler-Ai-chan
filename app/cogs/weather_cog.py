@@ -1,13 +1,11 @@
 import os
 import time
-import asyncio
 import discord
 from discord.ext import commands, tasks
-from app.config import Config
 from app.utils.logger import logger
 from app.services.weather_service import WeatherService
 
-class WeatherTestCog(commands.Cog):
+class WeatherCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.weather_service = WeatherService()
@@ -29,7 +27,7 @@ class WeatherTestCog(commands.Cog):
                     logger.info(f"Removed map cache file: {file_path}")
                 del self.map_cache[key]
 
-    @commands.command(name='weather')
+    @commands.hybrid_command(name='weather', help="Fetches and displays weather information for a specified city.")
     async def weather(self, ctx, *, city: str):
         """Fetches and displays weather information for a specified city (text only)."""
         try:
@@ -43,7 +41,7 @@ class WeatherTestCog(commands.Cog):
             logger.error(f"An unexpected error occurred: {e}")
             await ctx.send("An unexpected error occurred. Please try again later.")
 
-    @commands.command(name='weathermap')
+    @commands.hybrid_command(name='weathermap', help="Fetches weather information and map for a specified city with optional map size.")
     async def weather_map(self, ctx, *, args):
         """Fetches weather information and map for a specified city with optional map size."""
         try:
@@ -75,7 +73,7 @@ class WeatherTestCog(commands.Cog):
             logger.error(f"An unexpected error occurred: {e}")
             await ctx.send("An unexpected error occurred. Please try again later.")
 
-    @commands.command(name='weatherhelp')
+    @commands.hybrid_command(name='weatherhelp', help="Displays help information for weather-related commands.")
     async def weatherhelp(self, ctx):
         """Displays help information for weather-related commands."""
         embed = discord.Embed(
@@ -168,4 +166,4 @@ class WeatherTestCog(commands.Cog):
         return None
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(WeatherTestCog(bot))
+    await bot.add_cog(WeatherCog(bot))
