@@ -43,7 +43,8 @@ def send_to_groq(messages):
         start_time = time.time()
 
     completion = client.chat.completions.create(
-        model="llama3-70b-8192", 
+        #model="llama3-70b-8192", 
+        model="llama-3.1-70b-versatile", 
         messages=messages
     )
     answer = completion.choices[0].message.content
