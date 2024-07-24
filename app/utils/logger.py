@@ -31,21 +31,26 @@ class LokiHandler(logging.Handler):
 
 class CustomFileHandler(BaseRotatingHandler):
     def __init__(self, filename, maxBytes=0, encoding=None, delay=False):
-        super().__init__(filename, 'a', encoding, delay)
         self.maxBytes = maxBytes
-
-        # Initialize the current log file
-        self.baseFilename = self.get_latest_log_file()
-        self.stream = self._open()
+        self.baseFilename = filename
+        super().__init__(filename, 'a', encoding, delay)
+        self.stream = self._open()  # Open the stream when initializing
+        logging.debug(f"CustomFileHandler initialized with file: {self.baseFilename}")
 
     def shouldRollover(self, record):
-        if self.maxBytes > 0:                   # are we rolling over?
-            self.stream.seek(0, 2)  # due to non-posix-compliant Windows feature
+        logging.debug("Checking if rollover is needed")
+        if self.maxBytes > 0:  # Are we rolling over?
+            if self.stream is None:
+                logging.debug("Stream is None, opening stream")
+                self.stream = self._open()  # Ensure the stream is opened
+            self.stream.seek(0, 2)  # Due to non-posix-compliant Windows feature
             if self.stream.tell() + len(self.format(record)) >= self.maxBytes:
+                logging.debug("Rollover needed")
                 return 1
         return 0
 
     def doRollover(self):
+        logging.debug("Performing rollover")
         if self.stream:
             self.stream.close()
             self.stream = None
@@ -53,6 +58,7 @@ class CustomFileHandler(BaseRotatingHandler):
         self.baseFilename = self.get_new_log_file()
         self.mode = 'a'
         self.stream = self._open()
+        logging.debug(f"Rolled over to new file: {self.baseFilename}")
 
     def get_new_log_file(self):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -79,6 +85,7 @@ def setup_logger():
     log_dir = os.path.dirname(Config.LOG_FILE_PATH)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
+        logging.debug(f"Created log directory: {log_dir}")
 
     # Custom File handler with utf-8 encoding
     file_handler = CustomFileHandler(Config.LOG_FILE_PATH, maxBytes=1024*1024*0.5, encoding='utf-8')
