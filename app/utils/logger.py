@@ -80,12 +80,12 @@ class CustomFileHandler(BaseRotatingHandler):
 def setup_logger():
     logger = logging.getLogger('discord_bot')
     logger.setLevel(logging.DEBUG)
+    logger.propagate = False  # Prevent propagation to root logger
 
     # Ensure the log directory exists
     log_dir = os.path.dirname(Config.LOG_FILE_PATH)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-        logging.debug(f"Created log directory: {log_dir}")
 
     # Custom File handler with utf-8 encoding
     file_handler = CustomFileHandler(Config.LOG_FILE_PATH, maxBytes=1024*1024*0.5, encoding='utf-8')
@@ -94,9 +94,9 @@ def setup_logger():
 
     # Stream handler (console) with color
     console_handler = colorlog.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)  # Set console handler to INFO level
     console_handler.setFormatter(colorlog.ColoredFormatter(
-        '%(log_color)s%(levelname)s: %(message)s',
+        '%(log_color)s%(message)s',  # Remove levelname from console output
         log_colors={
             'DEBUG': 'green',
             'INFO': 'light_blue',
@@ -112,3 +112,9 @@ def setup_logger():
     return logger
 
 logger = setup_logger()
+
+# Disable logging for some noisy libraries
+logging.getLogger('discord').setLevel(logging.WARNING)
+logging.getLogger('discord.http').setLevel(logging.WARNING)
+logging.getLogger('websockets').setLevel(logging.WARNING)
+logging.getLogger('chardet').setLevel(logging.WARNING)
