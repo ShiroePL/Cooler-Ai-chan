@@ -48,7 +48,6 @@ class WeatherService:
                 logger.error("Failed to create combined image")
         except Exception as e:
             logger.error(f"An error occurred while creating centered weather map: {e}")
-        
         return None
 
     @staticmethod
