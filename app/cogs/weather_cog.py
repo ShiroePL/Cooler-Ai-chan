@@ -17,7 +17,7 @@ class WeatherCog(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def map_cleaner(self):
-        logger.info("Running map cache cleaner")
+        #logger.info("Running map cache cleaner")
         current_time = time.time()
         for key, (timestamp, _) in list(self.map_cache.items()):
             if current_time - timestamp > 600:  # 10 minutes
