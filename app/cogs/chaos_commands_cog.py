@@ -41,6 +41,13 @@ class ChaosCommands(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.author.bot:
+            # If the bot is responding to a command, track the user who initiated the command
+            if message.reference and message.reference.resolved:
+                referenced_message = message.reference.resolved
+                if referenced_message.author != self.bot.user:
+                    self.last_command_user[message.channel.name] = referenced_message.author.name
+            return  
         
         # roblox filter
         roblox_patterns = [
