@@ -109,20 +109,7 @@ class CommandHandlingService(commands.Cog):
             else:
                 logger.error("Emote 'hi' not found in the server.")
 
-        # anti-roblox filter for nequs
-        roblox_patterns = [
-            r"r[\W_]*o[\W_]*b[\W_]*l[\W_]*o[\W_]*x", 
-            r"r[\W_]*o[\W_]*b[\W_]*u[\W_]*x", 
-            r"b[\W_]*l[\W_]*o[\W_]*x", 
-            r"b[\W_]*l[\W_]*o[\W_]*s",
-            r"b[\W_]*l[\W_]*o"
-        ]
-        # Check if any pattern matches the message content
-        if any(re.search(pattern, message.content, re.IGNORECASE) for pattern in roblox_patterns):
-            logger.debug(f"Roblox word detected in message: {message.content}")
-            # Deleting user message and sending bot response
-            await message.delete()
-            await message.channel.send(f"<:pandafbi:1195713733142511706>{message.author.mention} said this: **{message.content}** and we don't want roblox here! <:deletedis:1196019787084615770>")
+        
 
         # Lottery reaction
         if random.randint(1, 100000) == 1:
@@ -145,13 +132,10 @@ class CommandHandlingService(commands.Cog):
 
             self.previous_author[channel_id] = author_id
         logger.info(f"Message from {message.author} in {message.channel}: {message.content}")
-        #logger.info(f"previous_author: {self.previous_author}")
+        
 
 
-        # Bad word filter
-        if 'badword' in message.content:
-            await message.delete()
-            await message.channel.send(f'{message.author.mention}, watch your language!')
+        
 
         # Log the message
         self.log_message(message.author, message.channel, message)
