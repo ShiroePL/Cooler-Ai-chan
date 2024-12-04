@@ -6,9 +6,13 @@ from app.cogs.command_handling_service_cog import CommandHandlingService
 from app.utils.command_utils import custom_command
 class General(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
-        self.command_handling_service = CommandHandlingService(bot)
-        self.config = Config()
+        try:
+            self.bot = bot
+            self.command_handling_service = CommandHandlingService(bot)
+            self.config = Config()
+        except Exception as e:
+            logger.error(f"Error initializing General cog: {e}")
+            raise
 
     @custom_command(name='sync')
     async def sync_commands(self, ctx):
@@ -53,4 +57,9 @@ class General(commands.Cog):
         logger.info("Bot shut down gracefully, state saved.")
 
 async def setup(bot):
-    await bot.add_cog(General(bot))
+    try:
+        await bot.add_cog(General(bot))
+        logger.info("General cog loaded successfully")
+    except Exception as e:
+        logger.error(f"Error setting up General cog: {e}")
+        raise

@@ -28,16 +28,28 @@ class CommandHandlingService(commands.Cog):
         return os.path.join(self.log_directory, f"log_{timestamp}_{self.log_file_index}.json")
 
     def get_latest_log_file(self):
-        log_files = sorted(os.listdir(self.log_directory), reverse=True)
-        if log_files:
-            latest_log_file = os.path.join(self.log_directory, log_files[0])
-            with open(latest_log_file, 'r') as f:
-                data = json.load(f)
-            if len(data) < self.max_messages_per_file:
-                self.log_file_index = int(log_files[0].split('_')[-1].split('.')[0])  # Update the log file index
-                return latest_log_file
-        
-        return self.get_new_log_file()
+        try:
+            log_files = []
+            if os.path.exists(self.log_directory):
+                log_files = sorted(os.listdir(self.log_directory), reverse=True)
+            
+            if log_files:
+                latest_log_file = os.path.join(self.log_directory, log_files[0])
+                try:
+                    with open(latest_log_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if len(data) < self.max_messages_per_file:
+                        self.log_file_index = int(log_files[0].split('_')[-1].split('.')[0])
+                        return latest_log_file
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error reading log file {latest_log_file}: {e}")
+                    # If the file is corrupted, create a new one
+                    return self.get_new_log_file()
+            
+            return self.get_new_log_file()
+        except Exception as e:
+            logger.error(f"Error in get_latest_log_file: {e}")
+            return self.get_new_log_file()
 
     def sanitize_message(self, message):
         # Replace mentions with usernames
@@ -47,29 +59,41 @@ class CommandHandlingService(commands.Cog):
         return sanitized_message
 
     def log_message(self, author, channel, message):
-        if not message.content and message.attachments:
-            return  # Skip logging if the message is empty and only contains attachments
+        try:
+            if not message.content and message.attachments:
+                return
 
-        sanitized_message = self.sanitize_message(message)
+            sanitized_message = self.sanitize_message(message)
 
-        log_entry = {
-            "author": str(author),
-            "channel": str(channel),
-            "message": sanitized_message,
-        }
+            log_entry = {
+                "author": str(author),
+                "channel": str(channel),
+                "message": sanitized_message,
+                "timestamp": datetime.now().isoformat()
+            }
 
-        if not os.path.exists(self.current_log_file):
-            with open(self.current_log_file, 'w') as f:
-                json.dump([log_entry], f, indent=4)
-        else:
-            with open(self.current_log_file, 'r+') as f:
-                data = json.load(f)
-                data.append(log_entry)
-                f.seek(0)
-                json.dump(data, f, indent=4)
+            data = []
+            if os.path.exists(self.current_log_file):
+                try:
+                    with open(self.current_log_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                except json.JSONDecodeError:
+                    logger.error(f"Corrupted log file detected: {self.current_log_file}")
+                    # Backup the corrupted file
+                    backup_path = f"{self.current_log_file}.corrupted"
+                    os.rename(self.current_log_file, backup_path)
+                    logger.info(f"Corrupted file backed up to: {backup_path}")
 
-        if len(data) >= self.max_messages_per_file:
-            self.current_log_file = self.get_new_log_file()
+            data.append(log_entry)
+            
+            with open(self.current_log_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+
+            if len(data) >= self.max_messages_per_file:
+                self.current_log_file = self.get_new_log_file()
+            
+        except Exception as e:
+            logger.error(f"Error in log_message: {e}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
