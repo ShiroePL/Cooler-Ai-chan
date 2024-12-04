@@ -42,9 +42,9 @@ class GamblingService:
 
         winner = users[0]
         await ctx.send(f"{winner.mention} Congratulations! You won {total_exp} exp! {random.choice(joy_kaomojis)}")
-        self.database.add_exp(winner.id, total_exp)
+        level_up , _ = self.database.add_exp(winner.id, total_exp)
 
-        if self.database.add_exp(winner.id, total_exp):
+        if level_up:
             await ctx.send(f"Congratulations {winner.mention}! You leveled up!")
 
         self.joinable = True
