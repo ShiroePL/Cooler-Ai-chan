@@ -84,6 +84,33 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
             
+    @commands.hybrid_command(name='tts_test', help="Say a text to the AI.")
+    async def tts_test(self, ctx, *, text: str):
+        logger.info(f"Say command triggered by {ctx.author.name}")
+        try:
+            # Print current working directory to know where we are
+            current_dir = os.getcwd()
+            logger.info(f"Current working directory: {current_dir}")
+            
+            audio_path = "test_audio.wav"
+            full_path = os.path.abspath(audio_path)
+            logger.info(f"Attempting to access audio file at: {audio_path}")
+            logger.info(f"Full path to audio file: {full_path}")
+            
+            # Check if file exists
+            if not os.path.exists(audio_path):
+                logger.error(f"Audio file not found at: {audio_path}")
+                await ctx.send("Error: Test audio file not found.")
+                return
+                
+            logger.info("Sending audio file...")
+            audio_file = await ctx.send(file=discord.File(audio_path))
+            
+            
+            
+        except Exception as e:
+            logger.error(f"Error in Say command: {str(e)}", exc_info=True)
+            await ctx.send(f"Error: {str(e)}")
 
 
     @commands.hybrid_command(name='oldask', help="Ask a question to the AI.")
