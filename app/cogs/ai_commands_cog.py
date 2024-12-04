@@ -145,9 +145,8 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
     @commands.hybrid_command(name='vision', help="Ask a question to the AI with an image.")
-    async def vision(self, ctx, *args, attachment: discord.Attachment = None):
+    async def vision(self, ctx, question: str = "", attachment: discord.Attachment = None):
         try:
-            question = " ".join(args)  # This will combine all the arguments into one string
             logger.debug(f"------- \nCommand VISION used by user {ctx.author.name}")
             logger.debug(f"Attachment: {attachment}")
             # Check if an attachment was provided

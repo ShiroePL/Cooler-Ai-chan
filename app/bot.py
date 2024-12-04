@@ -8,6 +8,7 @@ from app.services.database_service import DatabaseService
 from app.discord_games.tic_tac_toe.tic_tac_toe import start_tic_tac_toc
 from app.services.emojis_service import EmojiService
 import asyncio
+import json
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -140,10 +141,28 @@ async def load_cogs():
                     logger.error(f"Failed to load cog {module_name}: {e}")
     logger.info("Loaded cogs: " + ", ".join(cogs_loaded))
 
+def verify_json_files():
+    log_directory = "app/persistent_data/logs/message_logs"
+    if os.path.exists(log_directory):
+        for filename in os.listdir(log_directory):
+            if filename.endswith('.json'):
+                file_path = os.path.join(log_directory, filename)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        json.load(f)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Corrupted JSON file found: {file_path}")
+                    # Backup the corrupted file
+                    backup_path = f"{file_path}.corrupted"
+                    os.rename(file_path, backup_path)
+                    # Create new empty JSON file
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        json.dump([], f)
+
 async def main():
+    verify_json_files()  # Add this line before loading cogs
     async with bot:
         await load_cogs()
-        
         await bot.start(Config.DISCORD_TOKEN)
 
 if __name__ == "__main__":
