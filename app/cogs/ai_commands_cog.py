@@ -1,11 +1,13 @@
 import asyncio
 import discord
 from discord.ext import commands
-from app.utils.ai_related.groq_api import send_to_groq
+import requests
+from app.utils.ai_related.groq_api import send_to_groq, send_to_groq_vision
 from app.utils.ai_related.groq_service import GroqService
 from app.utils.ai_related.chatgpt_api import send_to_openai_vision, send_to_openai_gpt, send_to_openai, ask_gpt
 from app.utils.logger import logger
 from app.utils.command_utils import custom_command
+import os
 
 class AICommands(commands.Cog):
     def __init__(self, bot):
@@ -116,10 +118,11 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
     @commands.hybrid_command(name='vision', help="Ask a question to the AI with an image.")
-    async def vision(self, ctx, question: str, attachment: discord.Attachment = None):
+    async def vision(self, ctx, *args, attachment: discord.Attachment = None):
         try:
+            question = " ".join(args)  # This will combine all the arguments into one string
             logger.debug(f"------- \nCommand VISION used by user {ctx.author.name}")
-            
+            logger.debug(f"Attachment: {attachment}")
             # Check if an attachment was provided
             if attachment is None and ctx.message.attachments:
                 attachment = ctx.message.attachments[0]
@@ -148,6 +151,48 @@ class AICommands(commands.Cog):
             logger.error(f"Error in Vision command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
 
+    @commands.hybrid_command(name='groq_vision', help="Ask a question to the AI with an image.")
+    async def groq_vision(self, ctx, *, question: str):
+        try:
+            logger.debug(f"------- \nCommand GROQ VISION used by user {ctx.author.name}")
+            
+            # Check if an attachment is present in the message
+            if not ctx.message.attachments:
+                await ctx.send("Please upload an image along with your question for this command.")
+                return
+            
+            # Get the first attachment (you can handle multiple if needed)
+            attachment = ctx.message.attachments[0]
+            attachment_url = attachment.url  # Get the attachment's URL
+            logger.debug(f"Attachment URL: {attachment_url}")
+            
+            await ctx.defer()  # Defer response to avoid timeout
+            
+            # Send the question and attachment URL to your processing function
+            response = await send_to_groq_vision(question, attachment_url)
+            
+            if isinstance(response, tuple):
+                response, _, _, _ = response
+            
+            logger.debug(f"Sending response: {response}\n-------------")
+            
+            # Check if response is longer than Discord's message limit (2000 characters)
+            if len(response) > 2000:
+                for i in range(0, len(response), 2000):
+                    await ctx.send(response[i:i+2000])
+            else:
+                await ctx.send(response)
+        
+        except Exception as ex:
+            logger.error(f"Error in Vision command: {ex}")
+            await ctx.send("Sorry, something went wrong while processing your request.")
+
+
+
+
 
 async def setup(bot):
-    await bot.add_cog(AICommands(bot))
+    logger.info("Setting up AICommands cog...")
+    cog = AICommands(bot)
+    await bot.add_cog(cog)
+    logger.info("AICommands cog setup complete")
