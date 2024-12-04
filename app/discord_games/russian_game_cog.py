@@ -33,7 +33,7 @@ class RussianGame(commands.Cog):
             def check(reaction, user):
                 return str(reaction.emoji) == '💀' and reaction.message.id == message.id
 
-            timer = 45
+            timer = 15
             while timer > 0:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=1, check=check)
@@ -48,7 +48,7 @@ class RussianGame(commands.Cog):
                 return
 
             for user in users:
-                if self.database.get_exp(user.id) < amount:
+                if self.database.get_total_exp(user.id) < amount:
                     await ctx.send(f"{user.mention} is broke as heck and cannot join\nGo get some exp and don't waste OUR time")
                     users.remove(user)
                 else:
