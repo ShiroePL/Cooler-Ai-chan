@@ -16,7 +16,7 @@ class AICommands(commands.Cog):
          
 
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
-    async def ask(self, ctx, question):
+    async def ask(self, ctx, *, question):
         try:
             logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
             messages = await self.groq_service.ask_question(ctx.author.name, ctx.author.id, question)
@@ -30,7 +30,7 @@ class AICommands(commands.Cog):
     
 
     @commands.hybrid_command(name='chat', help="Chat with the AI.")
-    async def chat(self, ctx, question: str):
+    async def chat(self, ctx, *, question: str):
         try:
             logger.debug(f"------- \nCommand CHAT used by user {ctx.author.name}")
             messages = await self.groq_service.assemble_chat_history(ctx)
@@ -46,7 +46,7 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
     @commands.hybrid_command(name='askgpt', help="Ask a question to the AI.")
-    async def askgpt(self, ctx, question):
+    async def askgpt(self, ctx, *, question):
         try:
             logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
             messages = await ask_gpt(ctx.author.name, ctx.author.id, question)
@@ -85,7 +85,7 @@ class AICommands(commands.Cog):
 
             
     @commands.hybrid_command(name='tts_test', help="Say a text to the AI.")
-    async def tts_test(self, ctx, text: str):
+    async def tts_test(self, ctx, *, text: str):
         logger.info(f"Say command triggered by {ctx.author.name}")
         try:
             # Print current working directory to know where we are
@@ -114,7 +114,7 @@ class AICommands(commands.Cog):
 
 
     @commands.hybrid_command(name='oldask', help="Ask a question to the AI.")
-    async def oldask(self, ctx, question):
+    async def oldask(self, ctx, *, question):
         try:
             logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
             messages = await self.groq_service.ask_question(ctx.author.name, ctx.author.id, question)
@@ -128,7 +128,7 @@ class AICommands(commands.Cog):
     
 
     @commands.hybrid_command(name='oldchat', help="Chat with the AI.")
-    async def oldchat(self, ctx, question: str):
+    async def oldchat(self, ctx, *, question: str):
         try:
             logger.debug(f"------- \nCommand CHAT used by user {ctx.author.name}")
             
@@ -145,7 +145,7 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
     @commands.hybrid_command(name='vision', help="Ask a question to the AI with an image.")
-    async def vision(self, ctx, question: str, attachment: discord.Attachment = None):
+    async def vision(self, ctx, question: str = "", attachment: discord.Attachment = None):
         try:
             logger.debug(f"------- \nCommand VISION used by user {ctx.author.name}")
             logger.debug(f"Attachment: {attachment}")
@@ -168,7 +168,7 @@ class AICommands(commands.Cog):
                 # Split the response into chunks if it exceeds the Discord message limit
                 if len(response) > 2000:
                     for i in range(0, len(response), 2000):
-                        await ctx.send(response[i+i+2000])
+                        await ctx.send(response[i:i+2000])
                 else:
                     await ctx.send(response)
             else:
@@ -178,7 +178,7 @@ class AICommands(commands.Cog):
             await ctx.send("Sorry, something went wrong while processing your request.")
 
     @commands.hybrid_command(name='groq_vision', help="Ask a question to the AI with an image.")
-    async def groq_vision(self, ctx, question: str):
+    async def groq_vision(self, ctx, *, question: str):
         try:
             logger.debug(f"------- \nCommand GROQ VISION used by user {ctx.author.name}")
             
@@ -205,7 +205,7 @@ class AICommands(commands.Cog):
             # Check if response is longer than Discord's message limit (2000 characters)
             if len(response) > 2000:
                 for i in range(0, len(response), 2000):
-                    await ctx.send(response[i+i+2000])
+                    await ctx.send(response[i:i+2000])
             else:
                 await ctx.send(response)
         
