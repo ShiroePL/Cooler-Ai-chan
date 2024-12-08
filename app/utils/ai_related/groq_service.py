@@ -22,10 +22,20 @@ class GroqService:
             logger.error(f"Error in ask_question: {ex}")
             return "Sorry, something went wrong while processing your request."
         
-    async def assemble_chat_history(self, message):
-        """Get chat history with context about replies"""
+    async def assemble_chat_history(self, message, include_refs=False):
+        """Get chat history with optional reference context
+        Args:
+            message: The discord message/context object
+            include_refs: Whether to include reference information in messages
+        """
         try:
-            messages = [msg async for msg in message.channel.history(limit=30)]
+            # Handle both Context and Message objects
+            if hasattr(message, 'channel'):
+                channel = message.channel
+            else:
+                channel = message
+
+            messages = [msg async for msg in channel.history(limit=30)]
 
             chat_messages = []
             previous_author = None
@@ -37,9 +47,9 @@ class GroqService:
                 current_author = author.name
                 author_id = msg.author.id
 
-                # Handle message references
+                # Handle message references if enabled
                 reference_info = ""
-                if msg.reference and msg.reference.resolved:
+                if include_refs and msg.reference and msg.reference.resolved:
                     referenced_msg = msg.reference.resolved
                     reference_info = f" [In reply to: {referenced_msg.author.name}: {referenced_msg.content}]"
 
@@ -76,6 +86,7 @@ class GroqService:
         except Exception as ex:
             logger.exception("Error in assemble_chat_history")
             raise
+
 
     async def add_command_messages(self, ctx, chat_messages, user_message):
 
@@ -117,56 +128,5 @@ class GroqService:
 
     def remove_special_chars(self, input):
         return re.sub(r'[^0-9a-zA-Z]', '', input)
-
-    async def assemble_chat_history_with_refs(self, message):
-        """Get chat history with reference context for replies"""
-        try:
-            messages = [msg async for msg in message.channel.history(limit=30)]
-
-            chat_messages = []
-            previous_author = None
-            previous_author_id = None
-            concatenated_content = ""
-
-            for msg in reversed(messages):
-                author = msg.author
-                current_author = author.name
-                author_id = msg.author.id
-
-                # Handle message references
-                reference_info = ""
-                if msg.reference and msg.reference.resolved:
-                    referenced_msg = msg.reference.resolved
-                    reference_info = f" [In reply to: {referenced_msg.author.name}: {referenced_msg.content}]"
-
-                if current_author == previous_author:
-                    concatenated_content += "\n" + msg.content + reference_info
-                else:
-                    if concatenated_content:
-                        chat_messages.append({
-                            "role": "assistant" if previous_author == "AI-Chan" else "user",
-                            "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
-                        })
-
-                    previous_author = current_author
-                    previous_author_id = author_id
-                    concatenated_content = msg.content + reference_info
-
-            # Add the last concatenated message
-            if concatenated_content:
-                chat_messages.append({
-                    "role": "assistant" if previous_author == "AI-Chan" else "user",
-                    "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
-                })
-
-            # Insert the prompts at the beginning
-            chat_messages.insert(0, {"role": "system", "content": self.basic_prompt})
-            chat_messages.insert(1, {"role": "system", "content": self.history_prompt})
-
-            return chat_messages
-
-        except Exception as ex:
-            logger.exception("Error in assemble_chat_history_with_refs")
-            raise
 
     

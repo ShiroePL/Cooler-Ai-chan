@@ -108,10 +108,10 @@ class CommandHandlingService(commands.Cog):
             if referenced_message.author.id != self.bot.user.id:
                 return False
 
-            logger.debug(f"Handling reply to bot message from {message.author.name}")
+            logger.info(f"Handling reply to bot message from {message.author.name}")
             async with message.channel.typing():
                 # Get chat history and create context
-                messages = await self.groq_service.assemble_chat_history_with_refs(message)
+                messages = await self.groq_service.assemble_chat_history(message, include_refs=True)
                 
                 # Add context about this being a reply
                 reply_context = {

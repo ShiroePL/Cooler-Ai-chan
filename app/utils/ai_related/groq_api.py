@@ -20,7 +20,7 @@ def rotate_api_key():
     global current_key_index, client
     current_key_index = (current_key_index + 1) % len(api_keys)
     client = Groq(api_key=api_keys[current_key_index])
-    logger.debug(f"Rotated API key to: {current_key_index}")
+    logger.info(f"Rotated API key to: {current_key_index}")
 
 def send_to_groq(messages):
     """Send a list of messages to the Groq API and return the response, prompt tokens, completion tokens, and total tokens."""
