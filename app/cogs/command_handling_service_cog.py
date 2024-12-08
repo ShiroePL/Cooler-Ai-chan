@@ -8,6 +8,8 @@ from app.services.database_service import DatabaseService
 from app.config import Config
 from app.utils.logger import logger
 from datetime import datetime
+from app.utils.ai_related.groq_service import GroqService
+from app.utils.ai_related.groq_api import send_to_groq
 
 class CommandHandlingService(commands.Cog):
     def __init__(self, bot):
@@ -21,6 +23,7 @@ class CommandHandlingService(commands.Cog):
         logger.info("CommandHandlingService initialized")
         self.previous_author = {}  # Dictionary to track the last author per channel
         self.last_command_user = {}
+        self.groq_service = GroqService(bot)
 
     def get_new_log_file(self):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -95,6 +98,49 @@ class CommandHandlingService(commands.Cog):
         except Exception as e:
             logger.error(f"Error in log_message: {e}")
 
+    async def handle_bot_reply(self, message):
+        """Handle replies to bot messages"""
+        try:
+            if not message.reference or not message.reference.resolved:
+                return False
+
+            referenced_message = message.reference.resolved
+            if referenced_message.author.id != self.bot.user.id:
+                return False
+
+            logger.debug(f"Handling reply to bot message from {message.author.name}")
+            async with message.channel.typing():
+                # Get chat history and create context
+                messages = await self.groq_service.assemble_chat_history_with_refs(message)
+                
+                # Add context about this being a reply
+                reply_context = {
+                    "role": "system",
+                    "content": f"The next message is a direct reply to your previous message which was: '{referenced_message.content}'. "
+                              f"Keep this in mind when formulating your response."
+                }
+                messages.append(reply_context)
+
+                # Add the user's reply
+                messages.append({
+                    "role": "user",
+                    "content": f"{message.author.name} ({message.author.id}): {message.content}"
+                })
+
+                # Get and send response
+                response, _, _, _ = send_to_groq(messages)
+                
+                if len(response) > 2000:
+                    for i in range(0, len(response), 2000):
+                        await message.channel.send(response[i:i+2000])
+                else:
+                    await message.channel.send(response)
+
+            return True
+        except Exception as e:
+            logger.error(f"Error handling bot reply: {e}")
+            return False
+
     @commands.Cog.listener()
     async def on_message(self, message):
         logger.debug("----------")
@@ -104,9 +150,12 @@ class CommandHandlingService(commands.Cog):
                 referenced_message = message.reference.resolved
                 if referenced_message.author != self.bot.user:
                     self.last_command_user[message.channel.name] = referenced_message.author.name
-            return  
+            return
 
-        
+        # Handle replies to bot messages first
+        if await self.handle_bot_reply(message):
+            return
+
         # Check if the message is a command
         if message.content.startswith(Config.PREFIX):
             self.last_command_user[message.channel.name] = message.author.name

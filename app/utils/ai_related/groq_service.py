@@ -3,9 +3,10 @@ from app.utils.ai_related.prompt_templates import basic_prompt, history_prompt
 from app.utils.logger import logger
 
 class GroqService:
-    def __init__(self, ):
+    def __init__(self, bot=None):
         self.basic_prompt = basic_prompt
         self.history_prompt = history_prompt
+        self.bot = bot
 
     async def ask_question(self, author, author_id, user_message):
         try:
@@ -21,41 +22,52 @@ class GroqService:
             logger.error(f"Error in ask_question: {ex}")
             return "Sorry, something went wrong while processing your request."
         
-    async def assemble_chat_history(self, context):
+    async def assemble_chat_history(self, message):
+        """Get chat history with context about replies"""
         try:
-            messages = [message async for message in context.channel.history(limit=30)]
+            messages = [msg async for msg in message.channel.history(limit=30)]
 
             chat_messages = []
             previous_author = None
             previous_author_id = None
             concatenated_content = ""
 
-            for message in reversed(messages):
-                author = message.author
+            for msg in reversed(messages):
+                author = msg.author
                 current_author = author.name
-                author_id = message.author.id
+                author_id = msg.author.id
+
+                # Handle message references
+                reference_info = ""
+                if msg.reference and msg.reference.resolved:
+                    referenced_msg = msg.reference.resolved
+                    reference_info = f" [In reply to: {referenced_msg.author.name}: {referenced_msg.content}]"
 
                 if current_author == previous_author:
-                    concatenated_content += "\n" + message.content
+                    concatenated_content += "\n" + msg.content + reference_info
                 else:
                     if concatenated_content:
+                        # Check if bot name is available, otherwise use "AI-Chan"
+                        is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == "AI-Chan"
                         chat_messages.append({
-                            "role": "assistant" if previous_author in ["AI-Chan"] else "user",
+                            "role": "assistant" if is_assistant else "user",
                             "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
                         })
 
                     previous_author = current_author
                     previous_author_id = author_id
-                    concatenated_content = message.content
+                    concatenated_content = msg.content + reference_info
 
             # Add the last concatenated message
             if concatenated_content:
+                # Check if bot name is available, otherwise use "AI-Chan"
+                is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == "AI-Chan"
                 chat_messages.append({
-                    "role": "assistant" if previous_author in ["AI-Chan"] else "user",
+                    "role": "assistant" if is_assistant else "user",
                     "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
                 })
 
-            # Insert the basic prompt and history prompt at the beginning
+            # Insert the prompts at the beginning
             chat_messages.insert(0, {"role": "system", "content": self.basic_prompt})
             chat_messages.insert(1, {"role": "system", "content": self.history_prompt})
 
@@ -106,5 +118,55 @@ class GroqService:
     def remove_special_chars(self, input):
         return re.sub(r'[^0-9a-zA-Z]', '', input)
 
+    async def assemble_chat_history_with_refs(self, message):
+        """Get chat history with reference context for replies"""
+        try:
+            messages = [msg async for msg in message.channel.history(limit=30)]
+
+            chat_messages = []
+            previous_author = None
+            previous_author_id = None
+            concatenated_content = ""
+
+            for msg in reversed(messages):
+                author = msg.author
+                current_author = author.name
+                author_id = msg.author.id
+
+                # Handle message references
+                reference_info = ""
+                if msg.reference and msg.reference.resolved:
+                    referenced_msg = msg.reference.resolved
+                    reference_info = f" [In reply to: {referenced_msg.author.name}: {referenced_msg.content}]"
+
+                if current_author == previous_author:
+                    concatenated_content += "\n" + msg.content + reference_info
+                else:
+                    if concatenated_content:
+                        chat_messages.append({
+                            "role": "assistant" if previous_author == "AI-Chan" else "user",
+                            "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
+                        })
+
+                    previous_author = current_author
+                    previous_author_id = author_id
+                    concatenated_content = msg.content + reference_info
+
+            # Add the last concatenated message
+            if concatenated_content:
+                chat_messages.append({
+                    "role": "assistant" if previous_author == "AI-Chan" else "user",
+                    "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
+                })
+
+            # Insert the prompts at the beginning
+            chat_messages.insert(0, {"role": "system", "content": self.basic_prompt})
+            chat_messages.insert(1, {"role": "system", "content": self.history_prompt})
+
+            return chat_messages
+
+        except Exception as ex:
+            logger.exception("Error in assemble_chat_history_with_refs")
+            raise
 
     
