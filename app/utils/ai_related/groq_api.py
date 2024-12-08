@@ -20,7 +20,7 @@ def rotate_api_key():
     global current_key_index, client
     current_key_index = (current_key_index + 1) % len(api_keys)
     client = Groq(api_key=api_keys[current_key_index])
-    logger.debug(f"Rotated API key to: {current_key_index}")
+    logger.info(f"Rotated API key to: {current_key_index}")
 
 def send_to_groq(messages):
     """Send a list of messages to the Groq API and return the response, prompt tokens, completion tokens, and total tokens."""
@@ -43,7 +43,6 @@ def send_to_groq(messages):
         start_time = time.time()
 
     completion = client.chat.completions.create(
-        #model="llama3-70b-8192", 
         model="llama-3.3-70b-versatile", 
         messages=messages
     )
@@ -52,8 +51,15 @@ def send_to_groq(messages):
     completion_tokens = completion.usage.completion_tokens
     total_tokens = completion.usage.total_tokens
     
+    # Log token usage
+    logger.info("-------- GROQ RESPONSE --------")
+    logger.info(f"Prompt tokens: {prompt_tokens}")
+    logger.info(f"Completion tokens: {completion_tokens}")
+    logger.info(f"Total tokens: {total_tokens}")
+    logger.info(f"Total tokens in rotation: {token_count + total_tokens}")
+    logger.info("------------------------------")
+    
     token_count += total_tokens
-    logger.info(f"Total tokens in rotation: {token_count}")   
     return answer, prompt_tokens, completion_tokens, total_tokens
 
 

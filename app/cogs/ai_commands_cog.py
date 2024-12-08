@@ -12,7 +12,7 @@ import os
 class AICommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.groq_service = GroqService()  
+        self.groq_service = GroqService(bot)  
          
 
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
