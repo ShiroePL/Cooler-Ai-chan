@@ -156,6 +156,29 @@ class CommandHandlingService(commands.Cog):
         if await self.handle_bot_reply(message):
             return
 
+        # Check if the bot was mentioned
+        if self.bot.user in message.mentions:
+            # Remove the bot mention from the message content
+            content = message.content.replace(f'<@{self.bot.user.id}>', '').strip()
+            
+            # If there's any content after removing the mention, treat it as a chat command
+            if content:
+                logger.info(f"Bot mentioned with message: {content}")
+                async with message.channel.typing():
+                    # Get chat history and create context
+                    messages = await self.groq_service.assemble_chat_history(message)
+                    messages = await self.groq_service.add_command_messages(message, messages, content)
+                    
+                    # Get and send response
+                    response, _, _, _ = send_to_groq(messages)
+                    
+                    if len(response) > 2000:
+                        for i in range(0, len(response), 2000):
+                            await message.channel.send(response[i:i+2000])
+                    else:
+                        await message.channel.send(response)
+                return
+
         # Check if the message is a command
         if message.content.startswith(Config.PREFIX):
             self.last_command_user[message.channel.name] = message.author.name
