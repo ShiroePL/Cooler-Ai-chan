@@ -8,12 +8,27 @@ from app.utils.ai_related.chatgpt_api import send_to_openai_vision, send_to_open
 from app.utils.logger import logger
 from app.utils.command_utils import custom_command
 import os
+import time
 
 class AICommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.groq_service = GroqService(bot)  
-         
+        self.groq_service = GroqService(bot)
+        self.last_everyone_ping = 0  # Track timestamp of last @everyone ping
+        self.everyone_ping_cooldown = 120  # 2 minutes in seconds
+
+    def filter_everyone_ping(self, response: str) -> str:
+        """Remove @everyone ping if on cooldown, otherwise update last ping time"""
+        current_time = int(time.time())
+        if '@everyone' in response:
+            if current_time - self.last_everyone_ping < self.everyone_ping_cooldown:
+                # Remove the @everyone ping if on cooldown
+                logger.info("Removing @everyone ping due to cooldown")
+                return response.replace('@everyone', '')
+            else:
+                # Update last ping time
+                self.last_everyone_ping = current_time
+        return response
 
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
     async def ask(self, ctx, *, question):
@@ -21,6 +36,7 @@ class AICommands(commands.Cog):
             logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
             messages = await self.groq_service.ask_question(ctx.author.name, ctx.author.id, question)
             response, _, _, _ = send_to_groq(messages)
+            response = self.filter_everyone_ping(response)
             logger.debug(f"Sending response: {response}\n-------------")
             await ctx.send(response)
         except Exception as ex:
@@ -36,6 +52,7 @@ class AICommands(commands.Cog):
             messages = await self.groq_service.assemble_chat_history(ctx)
             messages = await self.groq_service.add_command_messages(ctx, messages, question)
             response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages)
+            response = self.filter_everyone_ping(response)
             logger.info(f"Prompt tokens: {prompt_tokens}")
             logger.info(f"Completion tokens: {completion_tokens}")
             logger.info(f"Total tokens: {total_tokens}")
