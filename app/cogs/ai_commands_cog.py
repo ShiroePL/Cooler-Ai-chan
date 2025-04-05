@@ -143,72 +143,7 @@ class AICommands(commands.Cog):
             logger.error(f"Error in Say command: {str(e)}", exc_info=True)
             await ctx.send(f"Error: {str(e)}")
 
-
-    @commands.hybrid_command(name='oldask', help="Ask a question to the AI.")
-    async def oldask(self, ctx, *, question):
-        try:
-            logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
-            messages = await self.groq_service.ask_question(ctx.author.name, ctx.author.id, question)
-            response, _, _, _ = send_to_openai(messages)
-            logger.debug(f"Sending response: {response}\n-------------")
-            await ctx.send(response)
-        except Exception as ex:
-            logger.error(f"Error in Ask command: {ex}")
-            await ctx.send("Sorry, something went wrong while processing your request.")
-        
-    
-
-    @commands.hybrid_command(name='oldchat', help="Chat with the AI.")
-    async def oldchat(self, ctx, *, question: str):
-        try:
-            logger.debug(f"------- \nCommand CHAT used by user {ctx.author.name}")
-            
-            messages = await self.groq_service.assemble_chat_history(ctx)
-            messages = await self.groq_service.add_command_messages(ctx, messages, question)
-            response, prompt_tokens, completion_tokens, total_tokens = send_to_openai(messages)
-            logger.info(f"Prompt tokens: {prompt_tokens}")
-            logger.info(f"Completion tokens: {completion_tokens}")
-            logger.info(f"Total tokens: {total_tokens}")
-            logger.debug(f"Sending response: {response}\n-------------")
-            await ctx.send(response)
-        except Exception as ex:
-            logger.error(f"Error in Chat command: {ex}")
-            await ctx.send("Sorry, something went wrong while processing your request.")
-
     @commands.hybrid_command(name='vision', help="Ask a question to the AI with an image.")
-    async def vision(self, ctx, question: str = "", attachment: discord.Attachment = None):
-        try:
-            logger.debug(f"------- \nCommand VISION used by user {ctx.author.name}")
-            logger.debug(f"Attachment: {attachment}")
-            # Check if an attachment was provided
-            if attachment is None and ctx.message.attachments:
-                attachment = ctx.message.attachments[0]
-
-            if attachment:
-                await ctx.defer()  # Defer the response to avoid timeout
-                attachment_url = attachment.url  # Get the attachment's URL
-                
-                # Correctly await and unpack the response
-                response = await send_to_openai_vision(question, attachment_url)
-                
-                if isinstance(response, tuple):
-                    response, _, _, _ = response
-
-                logger.debug(f"Sending response: {response}\n-------------")
-                
-                # Split the response into chunks if it exceeds the Discord message limit
-                if len(response) > 2000:
-                    for i in range(0, len(response), 2000):
-                        await ctx.send(response[i:i+2000])
-                else:
-                    await ctx.send(response)
-            else:
-                await ctx.send("No attachments found. Please upload an image with your question.")
-        except Exception as ex:
-            logger.error(f"Error in Vision command: {ex}")
-            await ctx.send("Sorry, something went wrong while processing your request.")
-
-    @commands.hybrid_command(name='groq_vision', help="Ask a question to the AI with an image.")
     async def groq_vision(self, ctx, *, question: str):
         try:
             logger.debug(f"------- \nCommand GROQ VISION used by user {ctx.author.name}")
