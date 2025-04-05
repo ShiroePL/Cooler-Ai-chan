@@ -30,28 +30,25 @@ class AICommands(commands.Cog):
                 self.last_everyone_ping = current_time
         return response
 
-    @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
-    async def ask(self, ctx, *, question):
+    # Create helper methods for the commands
+    async def _process_ask(self, ctx, question, model):
         try:
-            logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
+            logger.debug(f"------- \nCommand ASK used by user {ctx.author.name} with model {model}")
             messages = await self.groq_service.ask_question(ctx.author.name, ctx.author.id, question)
-            response, _, _, _ = send_to_groq(messages)
+            response, _, _, _ = send_to_groq(messages, model=model)
             response = self.filter_everyone_ping(response)
             logger.debug(f"Sending response: {response}\n-------------")
             await ctx.send(response)
         except Exception as ex:
             logger.error(f"Error in Ask command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
-        
-    
 
-    @commands.hybrid_command(name='chat', help="Chat with the AI.")
-    async def chat(self, ctx, *, question: str):
+    async def _process_chat(self, ctx, question, model):
         try:
-            logger.debug(f"------- \nCommand CHAT used by user {ctx.author.name}")
+            logger.debug(f"------- \nCommand CHAT used by user {ctx.author.name} with model {model}")
             messages = await self.groq_service.assemble_chat_history(ctx)
             messages = await self.groq_service.add_command_messages(ctx, messages, question)
-            response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages)
+            response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages, model=model)
             response = self.filter_everyone_ping(response)
             logger.info(f"Prompt tokens: {prompt_tokens}")
             logger.info(f"Completion tokens: {completion_tokens}")
@@ -61,6 +58,23 @@ class AICommands(commands.Cog):
         except Exception as ex:
             logger.error(f"Error in Chat command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
+
+    # Command implementations that use the helper methods
+    @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
+    async def ask_command(self, ctx, *, question):
+        await self._process_ask(ctx, question, "llama-3.3-70b-versatile")
+        
+    @commands.hybrid_command(name='new_ask', help="Ask a question to the AI using newer model.")
+    async def new_ask_command(self, ctx, *, question):
+        await self._process_ask(ctx, question, "meta-llama/llama-4-scout-17b-16e-instruct")
+
+    @commands.hybrid_command(name='chat', help="Chat with the AI.")
+    async def chat_command(self, ctx, *, question: str):
+        await self._process_chat(ctx, question, "llama-3.3-70b-versatile")
+
+    @commands.hybrid_command(name='new_chat', help="Chat with the AI using newer model.")
+    async def new_chat_command(self, ctx, *, question: str):
+        await self._process_chat(ctx, question, "meta-llama/llama-4-scout-17b-16e-instruct")
 
     @commands.hybrid_command(name='askgpt', help="Ask a question to the AI.")
     async def askgpt(self, ctx, *, question):
@@ -229,8 +243,6 @@ class AICommands(commands.Cog):
         except Exception as ex:
             logger.error(f"Error in Vision command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
-
-
 
 
 
