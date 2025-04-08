@@ -24,6 +24,7 @@ class WhitenekoModule(commands.Cog):
                 print(f"Error resetting nickname for user {user.name}: {ex}")
 
     @commands.command(name='spam')
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def spam(self, ctx, j: int, *, text: str):
         """Sends a specified message multiple times.
         
@@ -31,6 +32,10 @@ class WhitenekoModule(commands.Cog):
             j (int): The number of times to send the message.
             text (str): The message to send.
         """
+        # Limit to maximum 50 messages
+        if j > 50:
+            j = 50
+            
         # Anti-roblox filter for nequs
         roblox_patterns = [
             r"r[\W_]*o[\W_]*b[\W_]*l[\W_]*o[\W_]*x", 
@@ -48,6 +53,7 @@ class WhitenekoModule(commands.Cog):
             await ctx.message.delete()
             for _ in range(j):
                 await ctx.send(text)
+                await asyncio.sleep(0.5)  # This adds delay between messages to prevent rate limiting
 
     @commands.command(name='dm')
     async def dm(self, ctx, user: discord.Member, *, text: str):
