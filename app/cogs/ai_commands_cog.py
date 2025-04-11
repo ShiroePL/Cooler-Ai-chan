@@ -76,40 +76,18 @@ class AICommands(commands.Cog):
     async def new_chat_command(self, ctx, *, question: str):
         await self._process_chat(ctx, question, "meta-llama/llama-4-scout-17b-16e-instruct")
 
+    #@commands.hybrid_command(name='local_chat', help="Chat with the AI using newer model.")
+    #async def local_chat_command(self, ctx, *, question: str):
+    #    await self._process_chat(ctx, question, "mlewd-v2.4-13b")
+
+
     @commands.hybrid_command(name='askgpt', help="Ask a question to the AI.")
     async def askgpt(self, ctx, *, question):
         try:
-            logger.debug(f"------- \nCommand ASK used by user {ctx.author.name}")
-            messages = await ask_gpt(ctx.author.name, ctx.author.id, question)
-            
-            # Defer the response to avoid timeout
-            await ctx.defer()
-
-            # Send the "bot is thinking" message
-            thinking_message = await ctx.send("🤔 I'm thinking...")
-
-            try:
-                # Await the send_to_openai function with a timeout
-                response = await asyncio.wait_for(send_to_openai_gpt(messages), timeout=20.0)
-            except asyncio.TimeoutError:
-                await thinking_message.delete()
-                await ctx.send("Sorry, the request timed out. Please try again.")
-                return
-            
-            if isinstance(response, tuple):
-                response, _, _, _ = response
-
-            logger.debug(f"Sending response: {response}\n-------------")
-            
-            # Delete the "bot is thinking" message
-            await thinking_message.delete()
-
-            # Split the response into chunks if it exceeds the Discord message limit
-            if len(response) > 2000:
-                for i in range(0, len(response), 2000):
-                    await ctx.send(response[i:i+2000])
+            if ctx.author.id == 366046822885490689:
+                await ctx.send("Fuck off Nequs, give me back 6$, and another 6$, then you can use it.")
             else:
-                await ctx.send(response)
+                await ctx.send("Sorry, tell Nequs to give me back 6$ + 6$, then you can use it.")
         except Exception as ex:
             logger.error(f"Error in Ask command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
