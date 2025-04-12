@@ -62,7 +62,7 @@ class AICommands(commands.Cog):
     # Command implementations that use the helper methods
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
     async def ask_command(self, ctx, *, question):
-        await self._process_ask(ctx, question, "llama-3.3-70b-versatile")
+        await self._process_ask(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
         
     @commands.hybrid_command(name='new_ask', help="Ask a question to the AI using newer model.")
     async def new_ask_command(self, ctx, *, question):
@@ -74,7 +74,7 @@ class AICommands(commands.Cog):
 
     @commands.hybrid_command(name='chat', help="Chat with the AI.")
     async def chat_command(self, ctx, *, question: str):
-        await self._process_chat(ctx, question, "llama-3.3-70b-versatile")
+        await self._process_chat(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
 
     @commands.hybrid_command(name='new_chat', help="Chat with the AI using newer model.")
     async def new_chat_command(self, ctx, *, question: str):
