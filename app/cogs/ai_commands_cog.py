@@ -66,7 +66,11 @@ class AICommands(commands.Cog):
         
     @commands.hybrid_command(name='new_ask', help="Ask a question to the AI using newer model.")
     async def new_ask_command(self, ctx, *, question):
-        await self._process_ask(ctx, question, "meta-llama/llama-4-scout-17b-16e-instruct")
+        await self._process_ask(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
+
+    #@commands.hybrid_command(name='local_ask', help="Ask a question to the AI using newer model.")
+    #async def local_ask_command(self, ctx, *, question):
+    #    await self._process_ask(ctx, question, "mlewd-v2.4-13b")
 
     @commands.hybrid_command(name='chat', help="Chat with the AI.")
     async def chat_command(self, ctx, *, question: str):
@@ -74,7 +78,7 @@ class AICommands(commands.Cog):
 
     @commands.hybrid_command(name='new_chat', help="Chat with the AI using newer model.")
     async def new_chat_command(self, ctx, *, question: str):
-        await self._process_chat(ctx, question, "meta-llama/llama-4-scout-17b-16e-instruct")
+        await self._process_chat(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
 
     #@commands.hybrid_command(name='local_chat', help="Chat with the AI using newer model.")
     #async def local_chat_command(self, ctx, *, question: str):
@@ -91,7 +95,6 @@ class AICommands(commands.Cog):
         except Exception as ex:
             logger.error(f"Error in Ask command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
-
             
     @commands.hybrid_command(name='tts_test', help="Say a text to the AI.")
     async def tts_test(self, ctx, *, text: str):
