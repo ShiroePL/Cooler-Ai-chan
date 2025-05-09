@@ -22,7 +22,7 @@ def rotate_api_key():
     client = Groq(api_key=api_keys[current_key_index])
     logger.info(f"Rotated API key to: {current_key_index}")
 
-def send_to_groq(messages, model="llama-3.3-70b-versatile"):
+def send_to_groq(messages, model="meta-llama/llama-4-maverick-17b-128e-instruct"):
     """Send a list of messages to the Groq API and return the response, prompt tokens, completion tokens, and total tokens."""
     global token_count, start_time
 

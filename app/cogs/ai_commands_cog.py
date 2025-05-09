@@ -4,11 +4,11 @@ from discord.ext import commands
 import requests
 from app.utils.ai_related.groq_api import send_to_groq, send_to_groq_vision
 from app.utils.ai_related.groq_service import GroqService
-from app.utils.ai_related.chatgpt_api import send_to_openai_vision, send_to_openai_gpt, send_to_openai, ask_gpt
 from app.utils.logger import logger
 from app.utils.command_utils import custom_command
 import os
 import time
+import re
 
 class AICommands(commands.Cog):
     def __init__(self, bot):
@@ -59,14 +59,216 @@ class AICommands(commands.Cog):
             logger.error(f"Error in Chat command: {ex}")
             await ctx.send("Sorry, something went wrong while processing your request.")
 
+    async def _process_informative_question(self, ctx, question, model):
+        try:
+            logger.debug(f"------- \nCommand INFORMATIVE QUESTION used by user {ctx.author.name} with model {model}")
+            
+            # Create a dictionary-specific prompt without web search
+            enhanced_question = f"""
+I need information about the following: {question}
+
+Provide a concise answer that covers all essential information. Include key facts, important data, and relevant details. Format your response using clean Discord markdown for better readability.
+"""
+            logger.info("Using direct model query without web search")
+            
+            # Send directly to Groq without the standard prompts
+            messages = [
+                {"role": "user", "content": enhanced_question}
+            ]
+            
+            logger.info(f"Sending request to AI model: {model}")
+            logger.info(f"Messages: {messages}")
+            response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages, model=model)
+            response = self.filter_everyone_ping(response)
+            
+            logger.info(f"Prompt tokens: {prompt_tokens}")
+            logger.info(f"Completion tokens: {completion_tokens}")
+            logger.info(f"Total tokens: {total_tokens}")
+            logger.debug(f"Sending informative response: {response}\n-------------")
+            
+            # Check if response is too long for Discord (2000 chars)
+            if len(response) <= 2000:
+                await ctx.send(response)
+            else:
+                # Smart splitting that respects markdown
+                await self.send_split_message(ctx, response)
+            
+        except Exception as ex:
+            logger.error(f"Error in Informative Question command: {str(ex)}", exc_info=True)
+            await ctx.send(f"Sorry, something went wrong while processing your request: {str(ex)}")
+
+    async def _process_dictionary_definition(self, ctx, word, model):
+        try:
+            logger.debug(f"------- \nCommand DICTIONARY used by user {ctx.author.name} with model {model}")
+            
+            # Create a dictionary-specific prompt
+            dictionary_prompt = f"""
+Define the word or phrase: {word}
+
+Respond in a dictionary style format with:
+1. Word type (noun, verb, adjective, etc.)
+2. Pronunciation guide (if relevant)
+3. All different meanings/definitions (if multiple exist)
+4. Example sentences showing usage
+5. Etymology or origin (if notable)
+
+Keep definitions concise and clear as if from a real dictionary book. Use clean formatting.
+"""
+            logger.info("Processing dictionary definition request")
+            
+            # Send directly to Groq without the standard prompts
+            messages = [
+                {"role": "user", "content": dictionary_prompt}
+            ]
+            
+            logger.info(f"Sending request to AI model for dictionary definition: {model}")
+            logger.info(f"Messages: {messages}")
+            response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages, model=model)
+            response = self.filter_everyone_ping(response)
+            
+            logger.info(f"Prompt tokens: {prompt_tokens}")
+            logger.info(f"Completion tokens: {completion_tokens}")
+            logger.info(f"Total tokens: {total_tokens}")
+            logger.debug(f"Sending dictionary definition: {response}\n-------------")
+            
+            # Check if response is too long for Discord (2000 chars)
+            if len(response) <= 2000:
+                await ctx.send(response)
+            else:
+                # Smart splitting that respects markdown
+                await self.send_split_message(ctx, response)
+            
+        except Exception as ex:
+            logger.error(f"Error in Dictionary command: {str(ex)}", exc_info=True)
+            await ctx.send(f"Sorry, something went wrong while looking up that word: {str(ex)}")
+
+    async def send_split_message(self, ctx, message):
+        """
+        Splits a long message intelligently, trying to preserve markdown structure
+        """
+        try:
+            logger.info(f"Splitting message of length {len(message)} characters")
+            
+            # Maximum Discord message length
+            max_length = 2000
+            
+            # If message is short enough, just send it
+            if len(message) <= max_length:
+                await ctx.send(message)
+                return
+                
+            # Try to split at markdown headers first
+            chunks = []
+            header_pattern = re.compile(r'\n#{1,6} ')
+            
+            # Find all markdown headers
+            header_matches = list(header_pattern.finditer(message))
+            
+            if header_matches and len(header_matches) > 1:
+                # First chunk starts at beginning of message
+                start_pos = 0
+                
+                for match in header_matches:
+                    match_pos = match.start()
+                    
+                    # If adding this section would exceed limit, create a new chunk
+                    if match_pos - start_pos > max_length:
+                        # Find a good breaking point within max_length
+                        text_to_split = message[start_pos:start_pos + max_length]
+                        
+                        # Try to break at a paragraph
+                        last_para = text_to_split.rfind('\n\n')
+                        if last_para != -1 and last_para > max_length / 2:
+                            # Good paragraph break point found
+                            chunks.append(message[start_pos:start_pos + last_para])
+                            start_pos += last_para
+                        else:
+                            # No good paragraph, try a line break
+                            last_line = text_to_split.rfind('\n')
+                            if last_line != -1 and last_line > max_length / 2:
+                                chunks.append(message[start_pos:start_pos + last_line])
+                                start_pos += last_line + 1
+                            else:
+                                # No good breaks, force a break at max_length
+                                chunks.append(message[start_pos:start_pos + max_length])
+                                start_pos += max_length
+                    
+                    # If we're within limit for a section break
+                    if match_pos - start_pos < max_length:
+                        chunks.append(message[start_pos:match_pos])
+                        start_pos = match_pos
+                
+                # Add the final chunk
+                if start_pos < len(message):
+                    chunks.append(message[start_pos:])
+            else:
+                # No proper headers found, fall back to paragraph splitting
+                paragraphs = message.split('\n\n')
+                current_chunk = ""
+                
+                for paragraph in paragraphs:
+                    # If adding this paragraph would exceed limit, create a new chunk
+                    if len(current_chunk) + len(paragraph) + 2 > max_length:
+                        if current_chunk:
+                            chunks.append(current_chunk)
+                        
+                        # If a single paragraph is too long, need to split it
+                        if len(paragraph) > max_length:
+                            # Split into sentences or even mid-paragraph if needed
+                            remaining = paragraph
+                            while remaining:
+                                if len(remaining) <= max_length:
+                                    chunks.append(remaining)
+                                    remaining = ""
+                                else:
+                                    # Try to find a sentence break
+                                    last_sentence = remaining[:max_length].rfind('. ')
+                                    if last_sentence != -1 and last_sentence > max_length / 2:
+                                        chunks.append(remaining[:last_sentence+1])
+                                        remaining = remaining[last_sentence+2:]
+                                    else:
+                                        # No good sentence break, force a break
+                                        chunks.append(remaining[:max_length])
+                                        remaining = remaining[max_length:]
+                        else:
+                            current_chunk = paragraph
+                    else:
+                        if current_chunk:
+                            current_chunk += "\n\n" + paragraph
+                        else:
+                            current_chunk = paragraph
+                
+                # Add the final chunk
+                if current_chunk:
+                    chunks.append(current_chunk)
+            
+            # If we somehow didn't create any chunks, fall back to simple splitting
+            if not chunks:
+                simple_chunks = [message[i:i+max_length] for i in range(0, len(message), max_length)]
+                chunks = simple_chunks
+            
+            # Send all chunks
+            logger.info(f"Sending message in {len(chunks)} chunks")
+            for i, chunk in enumerate(chunks):
+                if chunk.strip():  # Only send non-empty chunks
+                    await ctx.send(chunk)
+            
+        except Exception as ex:
+            logger.error(f"Error in send_split_message: {str(ex)}", exc_info=True)
+            # Fall back to simple splitting if smart splitting fails
+            for i in range(0, len(message), max_length):
+                await ctx.send(message[i:i+max_length])
+
     # Command implementations that use the helper methods
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
     async def ask_command(self, ctx, *, question):
         await self._process_ask(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
         
-    @commands.hybrid_command(name='new_ask', help="Ask a question to the AI using newer model.")
-    async def new_ask_command(self, ctx, *, question):
-        await self._process_ask(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
+
+    # doesnt work its too long or something
+    #@commands.hybrid_command(name='local_web', help="Ask a question to the AI using newer model.")
+    #async def local_ask_command(self, ctx, *, question):
+    #    await self._process_ask(ctx, question, "compound-beta-mini")
 
     #@commands.hybrid_command(name='local_ask', help="Ask a question to the AI using newer model.")
     #async def local_ask_command(self, ctx, *, question):
@@ -76,9 +278,22 @@ class AICommands(commands.Cog):
     async def chat_command(self, ctx, *, question: str):
         await self._process_chat(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
 
-    @commands.hybrid_command(name='new_chat', help="Chat with the AI using newer model.")
-    async def new_chat_command(self, ctx, *, question: str):
-        await self._process_chat(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
+    @commands.hybrid_command(
+    name='d', 
+    aliases=['dict', 'dictionary'],
+    help="Look up a dictionary definition."
+    )
+    async def dictionary_command(self, ctx, *, question: str):
+        await self._process_dictionary_definition(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
+
+    @commands.hybrid_command(
+        name='q',
+        aliases=['question'],
+        help="Search for information using AI."
+    )
+    async def information_command(self, ctx, *, question: str):
+        await self._process_informative_question(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
+
 
     #@commands.hybrid_command(name='local_chat', help="Chat with the AI using newer model.")
     #async def local_chat_command(self, ctx, *, question: str):

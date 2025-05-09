@@ -8,14 +8,20 @@ class GroqService:
         self.history_prompt = history_prompt
         self.bot = bot
 
-    async def ask_question(self, author, author_id, user_message):
+    async def ask_question(self, author, author_id, user_message, agenic=False):
         try:
             # Gluing discord username to the message
             logger.info(f"Question: {user_message}")
-            messages = [
-                {"role": "system", "content": basic_prompt},
-                {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
-            ]
+            if agenic == False:
+                messages = [
+                    {"role": "system", "content": basic_prompt},
+                    {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
+                ]
+            else:
+                messages = [
+                    {"role": "system", "content": basic_prompt},
+                    {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
+                ]
             #logger.debug(f"Messages: {messages}")
             return messages
         except Exception as ex:
