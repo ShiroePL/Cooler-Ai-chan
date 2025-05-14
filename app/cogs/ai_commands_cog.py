@@ -65,11 +65,12 @@ class AICommands(commands.Cog):
             
             # Create a dictionary-specific prompt without web search
             enhanced_question = f"""
-I need information about the following: {question}
+            You are a helpful assistant that answers questions that user ask truthfully and honestly.
+            User question: {question}
 
-Provide a concise answer that covers all essential information. Include key facts, important data, and relevant details. Format your response using clean Discord markdown for better readability.
+            Format your response using clean Discord markdown for better readability.
 """
-            logger.info("Using direct model query without web search")
+            logger.info("Using helpful assistant model")
             
             # Send directly to Groq without the standard prompts
             messages = [
