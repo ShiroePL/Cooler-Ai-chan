@@ -260,11 +260,51 @@ Keep definitions concise and clear as if from a real dictionary book. Use clean 
             for i in range(0, len(message), max_length):
                 await ctx.send(message[i:i+max_length])
 
+    async def _process_web_search(self, ctx, word, model):
+        try:
+            logger.debug(f"------- \nCommand WEB used by user {ctx.author.name} with model {model}")
+            
+            # Create a dictionary-specific prompt
+            dictionary_prompt = f"""
+Search the web for the following question: {word}
+Keep the response concise and clear. Use clean formatting.
+"""
+            logger.info("Processing web search request")
+            
+            # Send directly to Groq without the standard prompts
+            messages = [
+                {"role": "user", "content": dictionary_prompt}
+            ]
+            
+            logger.info(f"Sending request to AI model for web search: {model}")
+            logger.info(f"Messages: {messages}")
+            response, prompt_tokens, completion_tokens, total_tokens = send_to_groq(messages, model=model)
+            response = self.filter_everyone_ping(response)
+            
+            logger.info(f"Prompt tokens: {prompt_tokens}")
+            logger.info(f"Completion tokens: {completion_tokens}")
+            logger.info(f"Total tokens: {total_tokens}")
+            logger.debug(f"Sending web search: {response}\n-------------")
+            
+            # Check if response is too long for Discord (2000 chars)
+            if len(response) <= 2000:
+                await ctx.send(response)
+            else:
+                # Smart splitting that respects markdown
+                await self.send_split_message(ctx, response)
+            
+        except Exception as ex:
+            logger.error(f"Error in Web Search command: {str(ex)}", exc_info=True)
+            await ctx.send(f"Sorry, something went wrong while searching the web: {str(ex)}")
+    
     # Command implementations that use the helper methods
     @commands.hybrid_command(name='ask', help="Ask a question to the AI.")
     async def ask_command(self, ctx, *, question):
         await self._process_ask(ctx, question, "meta-llama/llama-4-maverick-17b-128e-instruct")
         
+    @commands.hybrid_command(name='web', help="Ask a question to the AI with web search.")
+    async def web_command(self, ctx, *, question):
+        await self._process_web_search(ctx, question, "compound-beta")
 
     # doesnt work its too long or something
     #@commands.hybrid_command(name='local_web', help="Ask a question to the AI using newer model.")
