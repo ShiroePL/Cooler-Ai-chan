@@ -17,8 +17,8 @@ class DatabaseModule(commands.Cog):
         info = self.database.get_level_info(user_id)
         await ctx.send(f"Gozaimas! o/ How's grinding?\nLevel: {info[0]}\nExperience: {info[1]}\nTotal Experience: {info[2]}")
 
-    @commands.hybrid_command(name='botinfo')
-    async def bot_info(self, ctx):
+    @commands.hybrid_command(name='botstats')
+    async def botstats_command(self, ctx):
         bot_name = get_bot_name_from_context(ctx)
         bot_id = 452541322667229194
         info = self.database.get_level_info(bot_id)
