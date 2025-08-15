@@ -112,7 +112,7 @@ class ManagementModule(commands.Cog):
         
         await ctx.send(message)
 
-    @custom_command(name="setbotname", description="Set the bot name for this guild")
+    @commands.hybrid_command(name="setbotname", description="Set the bot name for this guild")
     @has_permissions(administrator=True)
     async def set_bot_name(self, ctx: Context, *, bot_name: str):
         """Set a custom bot name for this guild"""
@@ -141,7 +141,7 @@ class ManagementModule(commands.Cog):
         except Exception as e:
             await ctx.send(f"❌ An error occurred while setting bot name: {str(e)}")
 
-    @custom_command(name="getbotname", description="Get the current bot name for this guild")
+    @commands.hybrid_command(name="getbotname", description="Get the current bot name for this guild")
     async def get_bot_name(self, ctx: Context):
         """Get the current bot name for this guild"""
         try:
