@@ -38,6 +38,39 @@ class ChaosCommands(commands.Cog):
         await member.remove_roles(role)
         await ctx.send(f'{member.mention} has been unmuted.')
     
+    @custom_command(name='pingall', help="Pings everyone on the server individually instead of using @everyone.")
+    async def ping_all_individually(self, ctx):
+        """
+        Pings each member of the server individually instead of using @everyone.
+        This creates a chaotic spam of individual pings for fun.
+        """
+        if ctx.author.id != master_user_id:
+            await ctx.send("You are not authorized to use this command.")
+            return
+        
+        # Get all members in the guild (excluding bots)
+        members = [member for member in ctx.guild.members if not member.bot]
+        
+        if not members:
+            await ctx.send("No members found to ping!")
+            return
+        
+        # Send initial message
+        await ctx.send(f"🎯 Preparing to ping {len(members)} members individually... Chaos incoming! 😈")
+        
+        # Create chunks of mentions to avoid hitting Discord's message length limit
+        chunk_size = 20  # Ping 20 users per message to avoid spam limits
+        member_chunks = [members[i:i + chunk_size] for i in range(0, len(members), chunk_size)]
+        
+        for i, chunk in enumerate(member_chunks):
+            mentions = ' '.join([member.mention for member in chunk])
+            await ctx.send(f"📢 Ping wave {i + 1}/{len(member_chunks)}: {mentions}")
+            
+            # Small delay between chunks to avoid rate limiting
+            if i < len(member_chunks) - 1:  # Don't sleep after the last chunk
+                await asyncio.sleep(1)
+        
+        await ctx.send("✅ Individual ping chaos complete! Everyone has been personally summoned! 🎉")
 
     @commands.Cog.listener()
     async def on_message(self, message):
