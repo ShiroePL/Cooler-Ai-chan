@@ -39,7 +39,7 @@ class ChaosCommands(commands.Cog):
         await member.remove_roles(role)
         await ctx.send(f'{member.mention} has been unmuted.')
     
-    @commands.hybrid_command(name='pingall', help="Pings everyone on the server individually instead of using @everyone.")
+    @commands.hybrid_command(name='pingu', help="Pings everyone on the server individually instead of using @everyone.")
     async def ping_all_individually(self, ctx):
         """
         Pings each member of the server individually instead of using @everyone.
