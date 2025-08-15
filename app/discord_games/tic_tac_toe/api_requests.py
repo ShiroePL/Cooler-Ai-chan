@@ -53,7 +53,7 @@ def get_shiro_response_on_tictactoe(interaction, game, best_move, second_best, t
     print("messages: " + str(shiros_decision))
     what_shiro_chose = send_to_groq(shiros_decision)
     
-    print(f"aichan made this decision:\n {what_shiro_chose}")
+    print(f"bot made this decision:\n {what_shiro_chose}")
     # Extract the move position using regex
     # match = re.search(r'Best possible move: (\d)', what_shiro_chose)
     # if match:

@@ -27,7 +27,7 @@ def hash_username(username):
 #     board_state CHAR(9) NOT NULL DEFAULT '.........',
 #     game_status ENUM('ongoing', 'win', 'tie') NOT NULL DEFAULT 'ongoing',
 #     difficulty VARCHAR(10) NOT NULL DEFAULT ,
-#     last_move_player VARCHAR(20) NOT NULL DEFAULT , player or aichan
+#     last_move_player VARCHAR(20) NOT NULL DEFAULT , player or bot
 #     player_mark CHAR(1) NOT NULL DEFAULT ,
 # );
 current_working_directory = os.getcwd()

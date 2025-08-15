@@ -3,13 +3,14 @@ import discord
 from discord.ext import commands
 from app.utils.logger import logger
 from app.services.database_service import DatabaseService
+from app.utils.helpers import get_bot_name_from_context
 class InfoModule(commands.Cog):
-    """Contains all needed commands, get information about servers, users, and Ai-Chan."""
+    """Contains all needed commands, get information about servers, users, and the bot."""
     def __init__(self, bot):
         self.bot = bot
         self.database = DatabaseService()
 
-    @commands.hybrid_command(name='latency', description="Shows Ai-Chan's response time.")
+    @commands.hybrid_command(name='latency', description="Shows bot's response time.")
     async def latency(self, ctx):
         await ctx.send(f"My response time is {round(self.bot.latency * 1000)} ms. 🏓")
 
@@ -19,18 +20,19 @@ class InfoModule(commands.Cog):
     async def ping(self, ctx: commands.Context):
         await ctx.send("Pong!")
         
-    @commands.hybrid_command(name='botinfo', help="Shows Ai-Chan's statistics.")
+    @commands.hybrid_command(name='botinfo', help="Shows bot's statistics.")
     async def botinfo(self, ctx):
         users = sum(guild.member_count for guild in self.bot.guilds)
+        bot_name = get_bot_name_from_context(ctx)
 
         embed = discord.Embed(color=discord.Color.purple())
-        embed.set_author(name="Ai-Chan", icon_url=self.bot.user.display_avatar.url)
+        embed.set_author(name=bot_name, icon_url=self.bot.user.display_avatar.url)
         embed.add_field(name="🏠 Guilds", value=len(self.bot.guilds), inline=True)
         embed.add_field(name="👥 Users", value=users, inline=True)
         embed.add_field(name="🔹 Prefix", value="+", inline=True)
         embed.add_field(name="🕒 Created", value=self.bot.user.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"), inline=True)
         embed.add_field(name="🆔 ID", value=self.bot.user.id, inline=True)
-        embed.set_footer(text="Powered by Ai-Chan", icon_url=self.bot.user.display_avatar.url)
+        embed.set_footer(text=f"Powered by {bot_name}", icon_url=self.bot.user.display_avatar.url)
 
         await ctx.send(embed=embed)
 

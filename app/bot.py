@@ -7,6 +7,7 @@ from app.utils.logger import logger
 from app.services.database_service import DatabaseService
 from app.discord_games.tic_tac_toe.tic_tac_toe import start_tic_tac_toc
 from app.services.emojis_service import EmojiService
+from app.utils.helpers import get_bot_name_from_context
 import asyncio
 import json
 
@@ -24,7 +25,7 @@ emoji_service = EmojiService()
 @bot.event
 async def on_ready():
     logger.info("------")
-    logger.info("Cooler AI-Chan is Up and ready!")
+    logger.info("Bot is Up and ready!")
     bot.bot_id = bot.user.id  # Set bot's user ID
     logger.info(f"Bot ID is {bot.bot_id}")
     #logger.debug(f"Bot environment is set to {Config.ENVIRONMENT}")
@@ -118,7 +119,8 @@ async def on_command(ctx):
     level_up, _ = database.add_exp(bot_id, 1)
 
     if level_up:
-        await ctx.send(f"🎉 Level Up! 🎉 Congratulations to MYSELF! Aichan just leveled up! GRIND GRIND GRIND")
+        bot_name = get_bot_name_from_context(ctx)
+        await ctx.send(f"🎉 Level Up! 🎉 Congratulations to MYSELF! {bot_name} just leveled up! GRIND GRIND GRIND")
         logger.info(f"Bot leveled up!")
 
 

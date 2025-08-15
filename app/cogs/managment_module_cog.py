@@ -4,10 +4,11 @@ from discord.utils import get
 from discord.ext.commands import has_permissions, Bot, Context
 from app.services.database_service import DatabaseService
 from app.utils.command_utils import custom_command
+from app.utils.helpers import get_bot_name_from_context
 from app.config import Config
 
 class ManagementModule(commands.Cog):
-    """Management module for Ai-Chan. Commands for managing the server."""
+    """Management module for the bot. Commands for managing the server."""
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.database = DatabaseService()
@@ -27,7 +28,7 @@ class ManagementModule(commands.Cog):
 
         if user.id == self.shiro_id:
             if ctx.author.id == self.nequs_id:
-                await ctx.send("Nequs, you wish but I'm the Ai-chan owner!")
+                await ctx.send("Nequs, you wish but I'm the bot owner!")
             else:
                 await ctx.send("You cannot take action against Shiro the god!")
             return
@@ -54,7 +55,7 @@ class ManagementModule(commands.Cog):
         await ctx.channel.delete_messages(messages)
         await ctx.send(f"Deleted {amount} messages", delete_after=5)
 
-    @custom_command(name='say', help='Says something as Ai-Chan. +say text')
+    @custom_command(name='say', help='Says something as the bot. +say text')
     async def say(self, ctx: Context, *, text: str):
         await ctx.message.delete()
         await ctx.send(text)
@@ -110,6 +111,53 @@ class ManagementModule(commands.Cog):
             message = f"No nicknames found for {member.display_name}."
         
         await ctx.send(message)
+
+    @custom_command(name="setbotname", description="Set the bot name for this guild")
+    @has_permissions(administrator=True)
+    async def set_bot_name(self, ctx: Context, *, bot_name: str):
+        """Set a custom bot name for this guild"""
+        try:
+            if len(bot_name) > 50:
+                await ctx.send("❌ Bot name must be 50 characters or less!")
+                return
+            
+            if len(bot_name.strip()) == 0:
+                await ctx.send("❌ Bot name cannot be empty!")
+                return
+            
+            # Set the bot name in database
+            self.database.set_guild_bot_name(ctx.guild.id, bot_name.strip())
+            
+            embed = discord.Embed(
+                title="🤖 Bot Name Updated",
+                description=f"Bot name for this guild has been set to: **{bot_name.strip()}**",
+                color=0x00FF00
+            )
+            embed.add_field(name="Changed by", value=ctx.author.mention, inline=True)
+            embed.set_footer(text="The bot will now use this name in responses for this guild.")
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"❌ An error occurred while setting bot name: {str(e)}")
+
+    @custom_command(name="getbotname", description="Get the current bot name for this guild")
+    async def get_bot_name(self, ctx: Context):
+        """Get the current bot name for this guild"""
+        try:
+            current_bot_name = get_bot_name_from_context(ctx)
+            
+            embed = discord.Embed(
+                title="🤖 Current Bot Name",
+                description=f"The bot name for this guild is: **{current_bot_name}**",
+                color=0x0099FF
+            )
+            embed.set_footer(text="Use +setbotname <name> to change it (requires Administrator permission).")
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"❌ An error occurred while getting bot name: {str(e)}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ManagementModule(bot))

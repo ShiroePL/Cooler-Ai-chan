@@ -7,6 +7,7 @@ from app.services.database_service import DatabaseService
 from app.utils.logger import logger
 from app.utils.embeds import create_rps101_embed  # Assuming you store your embed functions here
 from app.utils.command_utils import custom_command
+from app.utils.helpers import get_bot_name_from_context
 
 class RPS101Game(commands.Cog):
     def __init__(self, bot):
@@ -47,10 +48,10 @@ class RPS101Game(commands.Cog):
                         raise ValueError("Unexpected items response format")
                     print(f"Available items: {items}")
 
-                aichan_choice = random.choice(items)
-                print(f"Aichan choice: {aichan_choice}")
+                bot_choice = random.choice(items)
+                print(f"Bot choice: {bot_choice}")
 
-                async with session.get(f"https://rps101.pythonanywhere.com/api/v1/match?object_one={thing}&object_two={aichan_choice}") as response:
+                async with session.get(f"https://rps101.pythonanywhere.com/api/v1/match?object_one={thing}&object_two={bot_choice}") as response:
                     match_response = await response.json()
                     print(f"Match response: {match_response}")
 
@@ -81,7 +82,8 @@ class RPS101Game(commands.Cog):
                     result_message = "🤝 It's a draw. Better luck next time 🤝"
                     color = discord.Color.orange()
 
-                embed = await create_rps101_embed(ctx, thing, aichan_choice, result_message, initial_bet, color, win_amount)
+                bot_name = get_bot_name_from_context(ctx)
+                embed = await create_rps101_embed(ctx, thing, bot_choice, result_message, initial_bet, color, win_amount, bot_name)
                 await ctx.send(embed=embed)
 
                 if level_up:

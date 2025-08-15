@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from app.services.database_service import DatabaseService
 from app.utils.command_utils import custom_command
+from app.utils.helpers import get_bot_name_from_context
 
 class DatabaseModule(commands.Cog):
     """Pls do not mess with it
@@ -16,11 +17,12 @@ class DatabaseModule(commands.Cog):
         info = self.database.get_level_info(user_id)
         await ctx.send(f"Gozaimas! o/ How's grinding?\nLevel: {info[0]}\nExperience: {info[1]}\nTotal Experience: {info[2]}")
 
-    @commands.hybrid_command(name='aichaninfo')
-    async def aichan_info(self, ctx):
-        aichan_id = 452541322667229194
-        info = self.database.get_level_info(aichan_id)
-        await ctx.send(f"Here my stats! OwO\nLevel: {info[0]}\nExperience: {info[1]}")
+    @commands.hybrid_command(name='botinfo')
+    async def bot_info(self, ctx):
+        bot_name = get_bot_name_from_context(ctx)
+        bot_id = 452541322667229194
+        info = self.database.get_level_info(bot_id)
+        await ctx.send(f"Here are {bot_name}'s stats! OwO\nLevel: {info[0]}\nExperience: {info[1]}")
 
     @commands.hybrid_command(name='leaderboard')
     async def get_leaderboard(self, ctx):
