@@ -18,8 +18,9 @@ class ChaosCommands(commands.Cog):
         """
         Temporarily restrict a user from sending messages for the specified duration (default 20 seconds).
         """
-        if ctx.author.id != master_user_id:
-            await ctx.send("You are not authorized to use this command.")
+        # Allow master user or server administrators to use this command
+        if ctx.author.id != master_user_id and not ctx.author.guild_permissions.administrator:
+            await ctx.send("You are not authorized to use this command. Only the bot master or server administrators can use this.")
             return
         
         role = discord.utils.get(ctx.guild.roles, name='Muted')
@@ -44,8 +45,9 @@ class ChaosCommands(commands.Cog):
         Pings each member of the server individually instead of using @everyone.
         This creates a chaotic spam of individual pings for fun.
         """
-        if ctx.author.id != master_user_id:
-            await ctx.send("You are not authorized to use this command.")
+        # Allow master user or server administrators to use this command
+        if ctx.author.id != master_user_id and not ctx.author.guild_permissions.administrator:
+            await ctx.send("You are not authorized to use this command. Only the bot master or server administrators can use this.")
             return
         
         # Get all members in the guild (excluding bots)
