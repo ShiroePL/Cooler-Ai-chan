@@ -13,7 +13,7 @@ class ChaosCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @custom_command(name='timeout', help="Temporarily mutes a user for a specified duration.")
+    @commands.hybrid_command(name='timeout', help="Temporarily mutes a user for a specified duration.")
     async def timeout(self, ctx, member: discord.Member, duration: int = 20):
         """
         Temporarily restrict a user from sending messages for the specified duration (default 20 seconds).
@@ -38,7 +38,7 @@ class ChaosCommands(commands.Cog):
         await member.remove_roles(role)
         await ctx.send(f'{member.mention} has been unmuted.')
     
-    @custom_command(name='pingall', help="Pings everyone on the server individually instead of using @everyone.")
+    @commands.hybrid_command(name='pingall', help="Pings everyone on the server individually instead of using @everyone.")
     async def ping_all_individually(self, ctx):
         """
         Pings each member of the server individually instead of using @everyone.
