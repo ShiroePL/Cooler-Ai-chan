@@ -113,7 +113,8 @@ class ManagementModule(commands.Cog):
         await ctx.send(message)
 
     @commands.hybrid_command(name="setbotname", description="Set the bot name for this guild")
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     async def set_bot_name(self, ctx: Context, *, bot_name: str):
         """Set a custom bot name for this guild"""
         try:

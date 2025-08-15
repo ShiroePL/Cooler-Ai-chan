@@ -263,7 +263,9 @@ class CommandHandlingService(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, context, error):
-        if isinstance(error, commands.CommandInvokeError):
+        if isinstance(error, commands.MissingPermissions):
+            await context.send(f"❌ You don't have the required permissions to use this command. Required: {', '.join(error.missing_permissions)}")
+        elif isinstance(error, commands.CommandInvokeError):
             await context.send(f"Error: {str(error)}")
 
 async def setup(bot):  
