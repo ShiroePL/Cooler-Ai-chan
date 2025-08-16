@@ -161,6 +161,16 @@ class CommandHandlingService(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         logger.debug("----------")
+        
+        # Delete messages from specific bot ID
+        if message.author.id == 452541322667229194:
+            try:
+                await message.delete()
+                logger.info(f"Deleted message from bot ID {message.author.id} in channel {message.channel.name}")
+            except Exception as e:
+                logger.error(f"Failed to delete message from bot ID {message.author.id}: {e}")
+            return
+        
         if message.author.bot:
             # If the bot is responding to a command, track the user who initiated the command
             if message.reference and message.reference.resolved:
