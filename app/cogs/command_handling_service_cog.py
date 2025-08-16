@@ -171,6 +171,10 @@ class CommandHandlingService(commands.Cog):
                 logger.error(f"Failed to delete message from bot ID {message.author.id}: {e}")
             return
         
+        # Log ALL messages (including bot messages) before any filtering
+        logger.info(f"Message from {message.author} in {message.channel}: {message.content}")
+        self.log_message(message.author, message.channel, message)
+        
         if message.author.bot:
             # If the bot is responding to a command, track the user who initiated the command
             if message.reference and message.reference.resolved:
@@ -255,14 +259,7 @@ class CommandHandlingService(commands.Cog):
                     await message.channel.send(f"🎉 Level Up! 🎉 Congratulations! {message.author.mention}! You leveled up from babbling so much!\n GRIND GRIND GRIND")
 
             self.previous_author[channel_id] = author_id
-        logger.info(f"Message from {message.author} in {message.channel}: {message.content}")
         
-
-
-        
-
-        # Log the message
-        self.log_message(message.author, message.channel, message)
         print(f"last command user: {self.last_command_user}")
         # Process message
         user = message.author
