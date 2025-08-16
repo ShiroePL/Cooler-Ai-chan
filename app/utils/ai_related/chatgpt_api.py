@@ -1,12 +1,14 @@
 import asyncio
 from openai import OpenAI
 from app.utils.logger import logger
+from app.utils.ai_related.prompt_templates import get_basic_prompt
+from app.utils.helpers import get_bot_name_from_context
 client = OpenAI()
 from dotenv import load_dotenv
 load_dotenv() # load openai api key from .env file
 
 def send_to_openai(messages):
-    completion = client.chat.completions.create(model="gpt-4o", messages=messages, temperature=1.3)
+    completion = client.chat.completions.create(model="gpt-5-mini", messages=messages, temperature=1.3)
     answer = completion.choices[0].message.content
     prompt_tokens = completion.usage.prompt_tokens
     completion_tokens = completion.usage.completion_tokens
@@ -17,11 +19,14 @@ def send_to_openai(messages):
     #logger.info(f"Response: {answer}")
     return answer, prompt_tokens, completion_tokens, total_tokens
 
-async def send_to_openai_vision(question, image_url):
+async def send_to_openai_vision(question, image_url, ctx=None):
+    bot_name = get_bot_name_from_context(ctx) if ctx else 'Ai-Chan'
+    system_prompt = get_basic_prompt(bot_name)
+    
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5-mini",
         messages=[
-            {"role": "system", "content": "You are Ai-Chan, the mascot of the Bakakats Discord server. You are a prankster who occasionally jokes around instead of helping. You love to troll everyone in the server, making jokes on expense of others and pinging users."},
+            {"role": "system", "content": system_prompt},
             {
                 "role": "user",
                 "content": [
@@ -42,12 +47,15 @@ async def send_to_openai_vision(question, image_url):
     return answer, prompt_tokens, completion_tokens, total_tokens
 
 
-async def ask_gpt(author, author_id, user_message):
+async def ask_gpt(author, author_id, user_message, ctx=None):
     try:
         # Gluing discord username to the message
         logger.info(f"Question: {user_message}")
+        bot_name = get_bot_name_from_context(ctx) if ctx else 'Ai-Chan'
+        system_prompt = f"You are helpful {bot_name} assistant that helps user with their question as best as possible."
+        
         messages = [
-            {"role": "system", "content": "You are helpful AI-chan assistant that helps user with their question as best as possible."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
         ]
         return messages
@@ -56,7 +64,7 @@ async def ask_gpt(author, author_id, user_message):
         return "Sorry, something went wrong while processing your request."
 
 async def send_to_openai_gpt(messages):
-    completion = await asyncio.to_thread(client.chat.completions.create, model="gpt-4o", messages=messages, temperature=0.7)
+    completion = await asyncio.to_thread(client.chat.completions.create, model="gpt-5-mini", messages=messages, temperature=0.7)
     answer = completion.choices[0].message.content
     prompt_tokens = completion.usage.prompt_tokens
     completion_tokens = completion.usage.completion_tokens

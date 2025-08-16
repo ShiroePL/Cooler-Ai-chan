@@ -1,5 +1,6 @@
 import aiohttp
 import discord
+from app.utils.helpers import get_bot_name_from_context
 
 async def create_embed_with_image(title, url):
     async with aiohttp.ClientSession() as session:
@@ -29,10 +30,12 @@ async def create_slot_machine_embed(ctx, display, messages, exp_message, color, 
     return embed
 
 
-async def create_rps101_embed(ctx, user_choice, aichan_choice, result_message, bet, color, win_amount):
+async def create_rps101_embed(ctx, user_choice, bot_choice, result_message, bet, color, win_amount, bot_name=None):
+    if bot_name is None:
+        bot_name = get_bot_name_from_context(ctx)
     embed = discord.Embed(title="RPS101 Game Result", color=color)
     embed.add_field(name="You", value=user_choice, inline=True)
-    embed.add_field(name="Ai-chan", value=aichan_choice, inline=True)
+    embed.add_field(name=bot_name, value=bot_choice, inline=True)
 
     if win_amount > 0 : 
         embed.add_field(name="Won | Bet", value=f"{win_amount} | {bet}", inline=True) 

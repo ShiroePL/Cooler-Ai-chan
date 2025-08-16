@@ -82,15 +82,41 @@ class AlarmCog(commands.Cog):
         else:
             await ctx.send(f"Alarm {dynamic_id} does not exist, {ctx.message.author.mention}.")
 
-    @commands.hybrid_command(name='alarmlist', help="List all active alarms for the user.")
-    async def alarm_list(self, ctx):
-        user_id = ctx.message.author.id
+    @commands.hybrid_command(name='alarmlist', help="List active alarms. Usage: +alarmlist [optional: username]")
+    async def alarm_list(self, ctx, username: str = None):
+        if username is None:
+            # Show alarms for the command user
+            user_id = ctx.author.id
+            target_user = ctx.author
+        else:
+            # Try to find the specified user
+            target_user = None
+            for guild in self.bot.guilds:
+                for member in guild.members:
+                    if username.lower() in member.name.lower() or (member.nick and username.lower() in member.nick.lower()):
+                        target_user = member
+                        break
+                if target_user:
+                    break
+            
+            if target_user is None:
+                await ctx.send(f"User '{username}' not found.")
+                return
+            
+            user_id = target_user.id
+        
         user_alarms = sorted(self.database.get_user_alarms(user_id), key=lambda x: x[1])
         if not user_alarms:
-            await ctx.send("You don't have any active alarms.")
+            if username is None:
+                await ctx.send("You don't have any active alarms.")
+            else:
+                await ctx.send(f"{target_user.display_name} doesn't have any active alarms.")
             return
 
-        embed = discord.Embed(title="⏰ Active Alarms ⏰", color=0x00FF00)
+        embed = discord.Embed(
+            title=f"⏰ Active Alarms for {target_user.display_name} ⏰", 
+            color=0x00FF00
+        )
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar.url)
 
         for idx, alarm in enumerate(user_alarms):

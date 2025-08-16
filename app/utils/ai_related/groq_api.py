@@ -22,7 +22,7 @@ def rotate_api_key():
     client = Groq(api_key=api_keys[current_key_index])
     logger.info(f"Rotated API key to: {current_key_index}")
 
-def send_to_groq(messages):
+def send_to_groq(messages, model="meta-llama/llama-4-maverick-17b-128e-instruct"):
     """Send a list of messages to the Groq API and return the response, prompt tokens, completion tokens, and total tokens."""
     global token_count, start_time
 
@@ -43,7 +43,7 @@ def send_to_groq(messages):
         start_time = time.time()
 
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile", 
+        model=model,
         messages=messages
     )
     answer = completion.choices[0].message.content
@@ -53,6 +53,7 @@ def send_to_groq(messages):
     
     # Log token usage
     logger.info("-------- GROQ RESPONSE --------")
+    logger.info(f"Model: {model}")
     logger.info(f"Prompt tokens: {prompt_tokens}")
     logger.info(f"Completion tokens: {completion_tokens}")
     logger.info(f"Total tokens: {total_tokens}")
@@ -86,7 +87,7 @@ async def send_to_groq_vision(question, image_url):
     
     completion = client.chat.completions.create(
         #model="llama3-70b-8192", 
-        model="llama-3.2-90b-vision-preview", 
+        model="meta-llama/llama-4-scout-17b-16e-instruct", 
         messages=[
             # this groq says tdont work now {"role": "system", "content": "You are Ai-Chan, the mascot of the Bakakats Discord server. You are a prankster who occasionally jokes around instead of helping. You love to troll everyone in the server, making jokes on expense of others and pinging users."},
             {

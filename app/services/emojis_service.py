@@ -12,6 +12,7 @@ from app.config import Config
 from app.utils.logger import logger
 from app.utils.ai_related.groq_api import send_to_groq
 from app.utils.ai_related.chatgpt_api import send_to_openai
+from app.utils.helpers import get_bot_name_for_guild
 
 class EmojiService:
     def __init__(self):
@@ -23,15 +24,17 @@ class EmojiService:
         self.initial_usages = 2  # Initial usages for new users
         self.emoji_key = self.config.EMOJI_API_KEY
 
-    def generate_emoji_question(self) -> Optional[Dict[str, Any]]:
+    def generate_emoji_question(self, guild_id: int = None) -> Optional[Dict[str, Any]]:
         emojis = self.fetch_emojis()
         emoji_combination = self.create_emoji_combination(emojis)
         if not emoji_combination:
             logger.error("Failed to generate emoji combination")
             return None
         
+        bot_name = get_bot_name_for_guild(guild_id) if guild_id else 'Ai-Chan'
+        
         messages = [
-            {"role": "system", "content": "You are Ai-Chan, the AI assistant from Honkai Impact and mascot of the Bakakats Discord server. Now you are playing an emoji guessing game."},
+            {"role": "system", "content": f"You are {bot_name}, the AI assistant from Honkai Impact and mascot of the Bakakats Discord server. Now you are playing an emoji guessing game."},
             {"role": "user", "content": f"""Generate a question using the following emojis: {emoji_combination}
             The question should represent a movie, game, or something well-known.
             Be creative with this emojis, but make sure it's something that can be guessed. Don't be repetitive, try to be unique and fun.

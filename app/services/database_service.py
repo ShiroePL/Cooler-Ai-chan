@@ -76,6 +76,12 @@ class DatabaseService:
                 last_updated INTEGER,
                 FOREIGN KEY(user_id) REFERENCES users(id)
             )""")
+            
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS guild_bot_names (
+                guild_id INTEGER PRIMARY KEY,
+                bot_name TEXT NOT NULL DEFAULT 'Ai-Chan'
+            )""")
 
         conn.commit()
             
@@ -285,3 +291,22 @@ class DatabaseService:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM alarms WHERE user_id = ?", (user_id,))
             conn.commit()
+    
+    def set_guild_bot_name(self, guild_id: int, bot_name: str):
+        """Set the bot name for a specific guild."""
+        with sqlite3.connect(self.path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT OR REPLACE INTO guild_bot_names (guild_id, bot_name) 
+                VALUES (?, ?)
+            """, (guild_id, bot_name))
+            conn.commit()
+            logger.info(f"Bot name set to '{bot_name}' for guild {guild_id}")
+    
+    def get_guild_bot_name(self, guild_id: int) -> str:
+        """Get the bot name for a specific guild, returns 'Ai-Chan' as default."""
+        with sqlite3.connect(self.path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT bot_name FROM guild_bot_names WHERE guild_id = ?", (guild_id,))
+            result = cursor.fetchone()
+            return result[0] if result else 'Ai-Chan'

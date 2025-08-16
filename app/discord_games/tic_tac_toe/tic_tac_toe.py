@@ -13,6 +13,7 @@ from sympy import im, use
 from decimal import Decimal
 from app.discord_games.tic_tac_toe.database_queries import get_game_variables, send_new_game_variables,finish_game_aka_delete_user_from_table
 from app.discord_games.tic_tac_toe.api_requests import get_shiro_response_on_tictactoe
+from app.utils.helpers import get_bot_name_from_context
 
 games = {}
 
@@ -72,7 +73,7 @@ class TicTacToe:
                 return None
 
             self.player_mark = 'O' if self.player_mark == 'X' else 'X'
-            self.set_last_move_player("player") if self.last_move_player == "aichan" else self.set_last_move_player("aichan")
+            self.set_last_move_player("player") if self.last_move_player == "bot" else self.set_last_move_player("bot")
 
             send_new_game_variables(self.interaction, board_state_str, bot_last_response, self.last_move_player, self.player_mark, self.move_history)
             return None
@@ -110,14 +111,14 @@ class TicTacToe:
         self.player_mark = player_mark
 
     def set_last_move_player(self, last_move_player: str):
-        """Sets the last move player so we know if the made was made by player or aichan."""
+        """Sets the last move player so we know if the move was made by player or bot."""
         self.last_move_player = last_move_player
 
     def set_game_status(self, game_status: str):
-        """Sets the last move player so we know if the made was made by player or aichan."""
+        """Sets the game status (win, lose, tie, ongoing)."""
         self.game_status = game_status
     def set_bot_last_response(self, bot_last_response: str):
-        """Sets the last move player so we know if the made was made by player or aichan."""
+        """Sets the bot's last response message."""
         self.bot_last_response = bot_last_response
 
     def reset(self):
@@ -249,7 +250,7 @@ async def button_callback(interaction: discord.Interaction):
         
         # we need to send to database that game is finished
         finish_game_aka_delete_user_from_table(interaction, game.game_id)
-        embed = create_embed(game, game_variables)
+        embed = create_embed(game, game_variables, interaction)
         view = ButtonGrid(game.board)
         await interaction.response.edit_message(embed=embed, view=view)
         await interaction.followup.send(str(game.who_won))
@@ -258,15 +259,15 @@ async def button_callback(interaction: discord.Interaction):
     elif game_status == "tie":
         # we need to send to database that game is finished
         finish_game_aka_delete_user_from_table(interaction, game.game_id)
-        embed = create_embed(game, game_variables)
+        embed = create_embed(game, game_variables, interaction)
         view = ButtonGrid(game.board)
         await interaction.response.edit_message(embed=embed, view=view)
         await interaction.followup.send("It's a tie!")
         delete_game_from_dictionary(interaction)
         return
     
-    embed = create_embed(game, game_variables)
-    view = ButtonGrid(game.board, lock_buttons=True) if game.last_move_player == "aichan" else ButtonGrid(game.board)
+    embed = create_embed(game, game_variables, interaction)
+    view = ButtonGrid(game.board, lock_buttons=True) if game.last_move_player == "bot" else ButtonGrid(game.board)
     await interaction.response.edit_message(embed=embed, view=view)
 
     if result:
@@ -274,18 +275,18 @@ async def button_callback(interaction: discord.Interaction):
         game.reset()
     
     # After updating for the player's move
-    if game.last_move_player == "aichan": # if player is last, then aichan should move now
+    if game.last_move_player == "bot": # if player is last, then bot should move now
         shiro_move(interaction, difficulty, game)
 
         # Update the game state and visuals again for the bot's move
-        embed = create_embed(game, game_variables)
+        embed = create_embed(game, game_variables, interaction)
         view = ButtonGrid(game.board, lock_buttons=False)
         
         game_status = game.game_status
         if game_status == "finished":
             # we need to send to database that game is finished
             finish_game_aka_delete_user_from_table(interaction, game.game_id)
-            embed = create_embed(game, game_variables)
+            embed = create_embed(game, game_variables, interaction)
             view = ButtonGrid(game.board)
             await interaction.followup.send(embed=embed, view=view)
             await interaction.followup.send(str(game.who_won))
@@ -295,7 +296,7 @@ async def button_callback(interaction: discord.Interaction):
         elif game_status == "tie":
             # we need to send to database that game is finished
             finish_game_aka_delete_user_from_table(interaction, game.game_id)
-            embed = create_embed(game, game_variables)
+            embed = create_embed(game, game_variables, interaction)
             view = ButtonGrid(game.board)
             await interaction.followup.send(embed=embed, view=view)
             await interaction.followup.send("It's a tie!")
@@ -305,11 +306,12 @@ async def button_callback(interaction: discord.Interaction):
         # Delete the game instance from the dictionary for both finished and tie condition
 
 
-def create_embed(game, game_variables=None):
-
+def create_embed(game, game_variables=None, interaction=None):
+    bot_name = get_bot_name_from_context(interaction) if interaction else "Bot"
+    
     # Assuming game.board is a 2D list
     board_desc = f"""Game status is: {game.game_status}\n
-    Aichan: {game.bot_last_response}\n
+    {bot_name}: {game.bot_last_response}\n
     Your turn, {game.last_move_player}! Your mark: {game.player_mark}
      """
     
@@ -331,7 +333,7 @@ def set_game_state(game, game_variables):
 
 def get_moves_from_algorithm(game, player_mark):
     """Returns the best moves for the given board and player mark."""
-    # Create a 2D board and get the best move for aichan using the Minimax function
+    # Create a 2D board and get the best move for bot using the Minimax function
     best_moves_from_master = game.find_best_moves(game.board, player_mark)
 
     best_move = None
@@ -356,7 +358,7 @@ def shiro_move(interaction, difficulty, game):
     game = games[user_id]
 
     game_variables = get_game_variables(interaction, difficulty) # retrive game status from database
-        # Create a 2D board and get the best move for aichan using the Minimax function
+        # Create a 2D board and get the best move for bot using the Minimax function
     best_move, second_best, third_best = get_moves_from_algorithm(game, 'O')
 # The _ ignores the row, you only get the column    # Convert 2D position to flat position
     print(best_move, second_best, third_best)
@@ -374,9 +376,9 @@ def shiro_move(interaction, difficulty, game):
 
     else:
         # Handle the case where the chosen move is None.
-        # If something in aichan answer went wrong, just choose best move.
+        # If something in bot answer went wrong, just choose best move.
         game.make_move(best_move, "Hmm, I think I will go for the best move!")
-        print("Defaulted to best move, something went wrong with aichan answer")
+        print("Defaulted to best move, something went wrong with bot answer")
 
 def delete_game_from_dictionary(interaction):
     user_id = interaction.user.id
@@ -399,13 +401,13 @@ async def start_tic_tac_toc(interaction, difficulty):
     who_starts_first = random.randint(0, 1)
     
 
-    last_move_player="player" if who_starts_first == 0 else "aichan"
+    last_move_player="player" if who_starts_first == 0 else "bot"
     # FOR TESTING PURPOSES
     #last_move_player = "player"
         # 2. Retrieve the game status from the database
     game_variables = get_game_variables(interaction, difficulty, last_move_player)
 #####################################################################################
-# I NEED TO CHECK WHO IS GOONA MOVE FIRST AND IF aichan, THEN SEND TO API FOR aichan MOVE AND TRIGGER MOVE FUNCTION 
+# I NEED TO CHECK WHO IS GOONA MOVE FIRST AND IF bot, THEN SEND TO API FOR bot MOVE AND TRIGGER MOVE FUNCTION 
     print(f"game varuables: {game_variables}")
     if game_variables is None:
         # Handle the error, e.g., by sending a message or logging it
@@ -426,13 +428,13 @@ async def start_tic_tac_toc(interaction, difficulty):
         print("Some keys are missing from game_variables!")
 
     # 3. Create and send the embed
-    embed = create_embed(game,game_variables)
-    view = ButtonGrid(game.board, lock_buttons=True) if game.last_move_player == "aichan" else ButtonGrid(game.board)
+    embed = create_embed(game, game_variables, interaction)
+    view = ButtonGrid(game.board, lock_buttons=True) if game.last_move_player == "bot" else ButtonGrid(game.board)
     await interaction.response.send_message(embed=embed, view=view)
-    if game.last_move_player == "aichan": # if player is last, then aichan should move now
+    if game.last_move_player == "bot": # if player is last, then bot should move now
 
-        shiro_move(interaction, difficulty, game) # aichan makes her move
+        shiro_move(interaction, difficulty, game) # bot makes its move
         # Update the game state and visuals again for the bot's move
-        embed = create_embed(game, game_variables)
+        embed = create_embed(game, game_variables, interaction)
         view = ButtonGrid(game.board, lock_buttons=False)
         await interaction.followup.send(embed=embed, view=view)

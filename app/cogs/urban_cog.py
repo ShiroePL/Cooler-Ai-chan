@@ -7,7 +7,7 @@ from app.services.database_service import DatabaseService
 from app.utils.command_utils import custom_command
 
 class UrbanModule(commands.Cog):
-    """Services offered by Ai-Chan - paid 1 exp per use"""
+    """Urban dictionary services - paid 1 exp per use"""
     def __init__(self, bot):
         self.bot = bot
         self.database = DatabaseService()

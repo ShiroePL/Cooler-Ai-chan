@@ -1,21 +1,35 @@
 import re
-from app.utils.ai_related.prompt_templates import basic_prompt, history_prompt
+from app.utils.ai_related.prompt_templates import get_basic_prompt, get_history_prompt
+from app.utils.helpers import get_bot_name_from_context
 from app.utils.logger import logger
 
 class GroqService:
     def __init__(self, bot=None):
-        self.basic_prompt = basic_prompt
-        self.history_prompt = history_prompt
         self.bot = bot
+    
+    def get_prompts_for_context(self, ctx):
+        """Get context-specific prompts with the correct bot name."""
+        bot_name = get_bot_name_from_context(ctx)
+        return get_basic_prompt(bot_name), get_history_prompt(bot_name)
 
-    async def ask_question(self, author, author_id, user_message):
+    async def ask_question(self, author, author_id, user_message, ctx=None, agenic=False):
         try:
             # Gluing discord username to the message
             logger.info(f"Question: {user_message}")
-            messages = [
-                {"role": "system", "content": basic_prompt},
-                {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
-            ]
+            
+            # Get context-specific prompt
+            basic_prompt_text, _ = self.get_prompts_for_context(ctx) if ctx else (get_basic_prompt(), get_history_prompt())
+            
+            if agenic == False:
+                messages = [
+                    {"role": "system", "content": basic_prompt_text},
+                    {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
+                ]
+            else:
+                messages = [
+                    {"role": "system", "content": basic_prompt_text},
+                    {"role": "user", "content": f"{author} ({author_id}): {user_message}"},
+                ]
             #logger.debug(f"Messages: {messages}")
             return messages
         except Exception as ex:
@@ -57,8 +71,9 @@ class GroqService:
                     concatenated_content += "\n" + msg.content + reference_info
                 else:
                     if concatenated_content:
-                        # Check if bot name is available, otherwise use "AI-Chan"
-                        is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == "AI-Chan"
+                        # Check if bot name is available, otherwise use dynamic bot name
+                        bot_name = get_bot_name_from_context(message) if message else "Ai-Chan"
+                        is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == bot_name
                         chat_messages.append({
                             "role": "assistant" if is_assistant else "user",
                             "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
@@ -70,16 +85,18 @@ class GroqService:
 
             # Add the last concatenated message
             if concatenated_content:
-                # Check if bot name is available, otherwise use "AI-Chan"
-                is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == "AI-Chan"
+                # Check if bot name is available, otherwise use dynamic bot name
+                bot_name = get_bot_name_from_context(message) if message else "Ai-Chan"
+                is_assistant = (self.bot and previous_author == self.bot.user.name) or previous_author == bot_name
                 chat_messages.append({
                     "role": "assistant" if is_assistant else "user",
                     "content": f"{previous_author} ({previous_author_id}): {concatenated_content}"
                 })
 
-            # Insert the prompts at the beginning
-            chat_messages.insert(0, {"role": "system", "content": self.basic_prompt})
-            chat_messages.insert(1, {"role": "system", "content": self.history_prompt})
+            # Insert the prompts at the beginning with context-specific bot name
+            basic_prompt_text, history_prompt_text = self.get_prompts_for_context(message)
+            chat_messages.insert(0, {"role": "system", "content": basic_prompt_text})
+            chat_messages.insert(1, {"role": "system", "content": history_prompt_text})
 
             return chat_messages
 
